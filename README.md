@@ -415,6 +415,9 @@ state no license; they are credited here and their data is not redistributed.
 **AI-assisted development**
 - Claude Code
 
+**Demo video**
+- Pitch video (`video/demo.mp4`) made with [Remotion](https://www.remotion.dev/) (React-based video framework)
+
 ---
 
 ## Known limitations
