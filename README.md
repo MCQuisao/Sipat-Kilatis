@@ -7,6 +7,8 @@ Works fully offline — your messages never leave your phone.
 
 Built for the **AppBuildersPH Hackathon 2026 — Local AI**.
 
+**[⬇️ Download the app (APK) and models — Release v1.0](https://github.com/MCQuisao/Sipat-Kilatis/releases/tag/v1.0)**
+
 ## Demo video
 
 [![Watch the Sipat Kilatis demo video](docs/images/video-thumbnail.jpg)](video/demo.mp4)
