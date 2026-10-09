@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
             intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let(vm::onSharedText)
         }
+        if (intent?.getBooleanExtra("open_demo", false) == true) vm.requestDemo()   // adb: --ez open_demo true
         val scanId = intent?.getLongExtra(ScamAlerts.EXTRA_SCAN_ID, -1L) ?: -1L
         if (scanId >= 0) {
             vm.openScan(scanId, fromAlert = true)

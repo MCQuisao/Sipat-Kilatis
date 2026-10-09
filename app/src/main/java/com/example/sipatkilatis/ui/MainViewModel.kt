@@ -54,6 +54,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _pendingResult = MutableStateFlow(false)
     val pendingResult = _pendingResult.asStateFlow()
 
+    /** Set when demo mode is requested from adb; the nav host opens it. */
+    private val _pendingDemo = MutableStateFlow(false)
+    val pendingDemo = _pendingDemo.asStateFlow()
+    fun requestDemo() { _pendingDemo.value = true }
+    fun demoHandled() { _pendingDemo.value = false }
+
     private val _scanning = MutableStateFlow(false)
     val scanning = _scanning.asStateFlow()
 

@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.sipatkilatis.model.Verdict
+import com.example.sipatkilatis.ui.demo.DemoScreen
 import com.example.sipatkilatis.ui.screens.CheckMessageScreen
 import com.example.sipatkilatis.ui.screens.HistoryScreen
 import com.example.sipatkilatis.ui.screens.HomeScreen
@@ -26,6 +27,7 @@ object Routes {
     const val HISTORY = "history"
     const val GUIDE = "guide"
     const val SETTINGS = "settings"
+    const val DEMO = "demo"
 }
 
 @Composable
@@ -33,12 +35,21 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
     val onboardingDone by vm.onboardingDone.collectAsStateWithLifecycle()
     val pendingShare by vm.pendingShare.collectAsStateWithLifecycle()
     val pendingResult by vm.pendingResult.collectAsStateWithLifecycle()
+    val pendingDemo by vm.pendingDemo.collectAsStateWithLifecycle()
 
     // Text shared from another app -> open the Check screen with it filled in
     LaunchedEffect(pendingShare, onboardingDone) {
         if (pendingShare && onboardingDone) {
             nav.navigate(Routes.CHECK) { launchSingleTop = true }
             vm.shareHandled()
+        }
+    }
+
+    // Demo mode opened from adb ("open_demo" extra), used to check a build on a phone through logs only
+    LaunchedEffect(pendingDemo, onboardingDone) {
+        if (pendingDemo && onboardingDone) {
+            nav.navigate(Routes.DEMO) { launchSingleTop = true }
+            vm.demoHandled()
         }
     }
 
@@ -109,6 +120,9 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
                 onBack = { nav.popBackStack() },
             )
         }
+        composable(Routes.DEMO) {
+            DemoScreen(onBack = { nav.popBackStack() })
+        }
         composable(Routes.GUIDE) {
             ScamGuideScreen(onBack = { nav.popBackStack() })
         }
@@ -126,6 +140,7 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
                 onAiExplanationsChange = vm::setAiExplanations,
                 onExport = vm::exportReports,
                 onClearHistory = vm::clearHistory,
+                onOpenDemo = { nav.navigate(Routes.DEMO) },
                 onAddContact = vm::addTrustedContact,
                 onRemoveContact = vm::removeTrustedContact,
                 onBack = { nav.popBackStack() },

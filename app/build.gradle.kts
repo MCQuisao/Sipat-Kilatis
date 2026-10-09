@@ -28,9 +28,13 @@ android {
 
     buildTypes {
         release {
+            // R8 shrinks and optimizes the code; keep rules for ONNX Runtime / MediaPipe are in src/main/keepRules
             optimization {
-                enable = false
+                enable = true
             }
+            // Hackathon build: signed with the debug key so it installs by sideloading (not for the Play Store).
+            // For a store release, create a real keystore and keep it (and its password) out of git.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

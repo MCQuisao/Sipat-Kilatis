@@ -1,6 +1,7 @@
 package com.example.sipatkilatis.ui.screens
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,6 +65,7 @@ fun SettingsScreen(
     onAiExplanationsChange: (Boolean) -> Unit,
     onExport: (onReady: (Intent?) -> Unit) -> Unit,
     onClearHistory: () -> Unit,
+    onOpenDemo: () -> Unit,
     onAddContact: (String) -> Unit,
     onRemoveContact: (String) -> Unit,
     onBack: () -> Unit,
@@ -185,8 +187,14 @@ fun SettingsScreen(
                 Text(stringResource(R.string.settings_privacy_body), style = MaterialTheme.typography.bodyMedium)
             }
 
+            // Hidden demo mode: tap the version number 5 times
+            var versionTaps by remember { mutableStateOf(0) }
             Text(stringResource(R.string.settings_version, appVersion()), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(8.dp).clickable {
+                    versionTaps++
+                    if (versionTaps >= 5) { versionTaps = 0; onOpenDemo() }
+                })
         }
     }
 

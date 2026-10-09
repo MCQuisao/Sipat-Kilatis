@@ -113,8 +113,9 @@ Explainer (SUSPICIOUS / SCAM only)
 | 3 | Android app skeleton and screens (English + Filipino) | ✅ Done |
 | 4 | On-device detection engine (rules + URL checker + RoBERTa / baseline ensemble) | ✅ Done |
 | 5 | SMS + chat screening, scam alerts, rule floors, disguised links, official-link cap | ✅ Done |
-| 6 | Local LLM explainer (Gemma via MediaPipe) | 🔄 In progress |
-| 7 | Room database (history, feedback, trusted contacts) + optional online updates | 🚧 Planned — history is in memory for now and resets when the app is closed |
+| 6 | Local LLM explainer (Gemma 3 1B via MediaPipe, GPU) with safety check + template fallback | ✅ Done |
+| 7 | Room database (history, feedback, trusted contacts), masked report export, clear history | ✅ Done — the optional online blocklist update was deliberately skipped (the app has no internet permission) |
+| 8 | Demo set + hidden demo mode, app review, release APK (R8), demo script, README | ✅ Done |
 
 **What the Android app does today:**
 - **Screens real messages automatically, fully offline:**
@@ -126,6 +127,14 @@ Explainer (SUSPICIOUS / SCAM only)
   Alerts have **View details** and **Mark as safe** actions, and Android's automatic "Open link" button is turned off.
 - **Manual check:** paste a message, or **Share → Sipat Kilatis** from any app.
 - **Result screen** highlights the suspicious parts of the message and lists the reasons.
+- **AI explanation on the phone:** for SUSPICIOUS / SCAM, Gemma 3 1B (on the phone's GPU) writes a short explanation.
+  It is shown only if it finishes within 20 s and passes a safety check; otherwise a built-in template explanation
+  is shown. Measured on a Snapdragon 732G: ~10 s to load (once), ~11 s per explanation.
+- **History saved on the phone** (Room): survives restarts, with search and verdict filters. **Mark as safe** /
+  **Report scam** on every result; **Export my reports** saves a CSV with numbers, emails, and names masked, which
+  you share yourself. **Clear history** in Settings.
+- **Hidden demo mode:** Settings → tap the version number 5 times. Runs the 10 demo messages
+  (`docs/demo_messages.md`) through the detector: 10/10 as expected, ~150 ms each on a mid-range phone.
 - Screens: Onboarding · Home dashboard · Check a message · Result · History · Scam guide · Settings
   (sensitivity, protection on/off, permissions).
 - Full **English and Filipino** UI, switchable per app.
@@ -252,6 +261,24 @@ cd ml
 4. Copy the trained models from `ml/models/` into `app/src/main/assets/` (`baseline.onnx`,
    `scam_classifier_int8.onnx`; git-ignored). The tokenizer files and `blocklist.txt` are already there.
    If a model is missing, the app falls back to the other model, or to rules + URL checks only.
+5. *(Optional, for AI explanations)* Download `gemma3-1b-it-int4.task` (555 MB) from
+   [litert-community/Gemma3-1B-IT](https://huggingface.co/litert-community/Gemma3-1B-IT) (accept the Gemma license),
+   install the app once, then push the model to the phone:
+   ```powershell
+   adb push "$env:USERPROFILE\Downloads\gemma3-1b-it-int4.task" /sdcard/Android/data/com.example.sipatkilatis/files/llm/model.task
+   ```
+   Uninstalling the app deletes this file. Without it, the app uses template explanations.
+
+**Install the release APK** (R8-shrunk, ~235 MB, signed with the debug key for sideloading — not for the Play Store):
+
+```powershell
+.\gradlew.bat assembleRelease
+adb install -r app\build\outputs\apk\release\app-release.apk
+```
+
+On Xiaomi / Redmi / POCO phones, also turn on **Autostart** and set **Battery saver → No restrictions** for the app,
+otherwise MIUI may stop SMS screening in the background. On Android 13+, a sideloaded APK (not installed through
+adb / Android Studio) needs App info → ⋮ → **Allow restricted settings** before chat-app screening can be enabled.
 
 **Tests**
 
@@ -261,7 +288,20 @@ cd ml
 
 # On an emulator: both ONNX models vs the Python test vectors (within 0.02), end-to-end timing
 $env:ANDROID_SERIAL = "emulator-5554"; .\gradlew.bat connectedDebugAndroidTest
+
+# On a phone with the Gemma model: explanation speed, safety check, overlapping requests (no crash).
+# Use adb directly: Gradle's connected tests uninstall the app, which deletes the pushed model.
+.\gradlew.bat assembleDebug assembleDebugAndroidTest
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+adb install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
+adb shell am instrument -w -e class com.example.sipatkilatis.detection.LlmOnDeviceTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
+
+# Run demo mode from a computer and read the results from the log
+adb shell am start -n com.example.sipatkilatis/.MainActivity --ez open_demo true
+adb logcat -s SipatKilatis | findstr DEMO
 ```
+
+**Demo:** see `docs/DEMO_SCRIPT.md` (3-minute flow + 5-slide pitch outline) and `docs/demo_messages.md`.
 
 **Try a scam SMS on the emulator** (open the app once first, then press Home):
 

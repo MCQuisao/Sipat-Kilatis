@@ -52,6 +52,13 @@ SipatKilatis/
   and `trusted_contacts`, via `RoomScanRepository`. The detector reads trusted contacts straight from the DB
   (`trustedNow()`), so a cold start by an incoming SMS still sees them. "Export my reports" = masked CSV
   (`ReportExporter`) shared through the share sheet + FileProvider; nothing is sent automatically.
+- Release build (phase 8): R8 on, signed with the DEBUG key (sideload only). Keep rules for ONNX Runtime and
+  MediaPipe in `app/src/main/keepRules/rules.keep`. Verified on a phone: detection + Gemma work after R8.
+  Debug and release share the debug key, so `adb install -r` switches between them and keeps data + model.
+- Demo mode: `ui/demo/` (10 messages = `docs/demo_messages.md`); Settings → tap version 5x, or
+  `adb shell am start -n com.example.sipatkilatis/.MainActivity --ez open_demo true` and read "DEMO" log lines.
+  Keep `DEMO_MESSAGES` and the doc in sync; expected verdicts come from real runs, not guesses.
+- Gemma is unloaded in `SipatApp.onTrimMemory` (app in background) so Android is less likely to kill screening.
 - The optional online blocklist update was deliberately SKIPPED: the app has no internet permission at all.
   The blocklist updates only with a new APK.
 - The notification listener ignores notifications about messages older than 2 minutes (apps re-post old

@@ -52,6 +52,17 @@ class SipatApp : Application() {
         // Load the ONNX models in the background so the first scan (manual or incoming SMS) is fast
         graph.appScope.launch { graph.detector.warmUp() }
     }
+
+    /**
+     * App went to the background (or memory is tight): unload Gemma (~1 GB) so Android is less likely to kill
+     * the process, which also runs SMS screening. The small detection models stay loaded. Gemma reloads on the
+     * next explanation; reset() is skipped automatically if an explanation is still being written.
+     */
+    @Suppress("DEPRECATION")
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_UI_HIDDEN) graph.appScope.launch { graph.llmExplainer.reset() }
+    }
 }
 
 /** Shortcut: context.graph from any Activity / Receiver / Service. */
