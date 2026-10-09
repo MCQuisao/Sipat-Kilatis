@@ -1,0 +1,13 @@
+# Sipat Kilatis ML: data prep, training, export
+torch
+transformers
+datasets
+scikit-learn
+pandas
+openpyxl
+optimum[onnxruntime]
+onnx
+onnxruntime
+accelerate
+evaluate
+skl2onnx

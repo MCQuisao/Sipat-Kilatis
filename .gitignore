@@ -1,0 +1,65 @@
+# ---------- Android / Gradle ----------
+*.iml
+.gradle
+/local.properties
+local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+*.egg-info/
+.env
+
+# ---------- ML outputs ----------
+# Training checkpoints / logs
+ml/runs/
+ml/checkpoints/
+ml/outputs/
+wandb/
+# Everything in ml/models except placeholders and small metadata
+ml/models/*
+!ml/models/.gitkeep
+!ml/models/*.json
+!ml/models/*.md
+
+# ---------- Large model files (anywhere, incl. app assets) ----------
+*.onnx
+*.onnx.data
+*.ort
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.tflite
+*.task
+*.gguf
+*.pkl
+*.joblib
+
+# ---------- Datasets (contain real PH messages; share privately, never push) ----------
+ml/data/raw/*
+!ml/data/raw/.gitkeep
+ml/data/processed/*
+!ml/data/processed/.gitkeep
