@@ -51,15 +51,16 @@ were never used for training.
 Notes:
 - int8 quantization shrank RoBERTa **4× (437 → 110 MB) with no loss in accuracy**, and runs at
   **~25 ms per message** on a laptop CPU.
-- The test set is small: one message = ~1.6 points of FPR, so the two models are close. The final app
-  combines the ML score with the rules engine and URL checker (below) to cut false positives further.
+- The test set is small: one message = ~1.6 points of FPR, so the two models are close. They also make
+  **different mistakes**, so the app runs **both and averages them** (ensemble), then combines that with
+  the rules engine and URL checker (below).
 
 ---
 
 ## How it works
 
 ```
-Incoming SMS / chat notification / pasted or shared text
+Incoming SMS  ·  chat notification (Messenger, Viber, WhatsApp, GCash, Maya …)  ·  pasted / shared text
         │
         ▼
 Preprocessor  ─ lowercase, normalize lookalikes (0→o, 1→l, @→a, $→s …),
@@ -70,20 +71,35 @@ Detection engine (all on-device)
   ├─ Rules engine    weighted EN/FIL scam phrases: "account locked", "i-verify",
   │                  "nanalo ka", "delivery fee", OTP requests, urgency ("ngayon na", "agad")
   ├─ URL checker     offline blocklist, lookalike brand domains (gcash, maya, bdo, bpi,
-  │                  lbc, jnt, shopee, lazada …), shorteners, raw-IP links, odd TLDs
-  └─ ML classifier   fine-tuned RoBERTa-Tagalog (int8 ONNX, ONNX Runtime Android)
-                     fallback: TF-IDF + logistic regression (ONNX)
+  │                  lbc, jnt, shopee, lazada …), shorteners, raw-IP links, odd TLDs,
+  │                  and disguised links (gcash-verify[.]xyz, "(dot)", "bit ly/x")
+  └─ ML ensemble     ML = average of RoBERTa-Tagalog (int8 ONNX) + TF-IDF/LR (ONNX),
+                     run with ONNX Runtime Android (if one fails to load, the other is used)
         │
         ▼
-score = 0.6·ML + 0.25·URL + 0.15·Rules   (known-blocklist URL → at least 0.9)
+score = 0.6·ML + 0.25·URL + 0.15·Rules
+  + safety rules (see below)
 
-   SAFE  < 0.4  ≤  SUSPICIOUS  < 0.7  ≤  SCAM
+   SAFE  < 0.4  ≤  SUSPICIOUS  < 0.7  ≤  SCAM      (Normal sensitivity)
+        │
+        ▼
+Alert  ─ SCAM: heads-up notification · SUSPICIOUS: normal notification · SAFE: silent
         │
         ▼
 Explainer (SUSPICIOUS / SCAM only)
   small local LLM (Gemma ~1B, MediaPipe LLM Inference) explains *why*
   in the user's language; template fallback built from the triggered flags
 ```
+
+**Safety rules on top of the weighted score:**
+
+| Rule | Why |
+|---|---|
+| Strong scam phrases (Rules ≥ 0.6) → at least **SCAM**; medium (≥ 0.4) → at least **SUSPICIOUS** | PH networks strip links from person-to-person SMS, so many real scam texts have **no link** — and the ML models (trained mostly on link scams) would score them low. On the dataset, **0 of 1,864 legit messages** reach the medium rule level. |
+| Every link goes to an official site (gcash.com, lazada.com.ph, zoom.us …) and no strong phrases → capped at **SAFE** | The ML models treat *any* link as scam-like, which would flag real bank and shop messages. (All of google.com / facebook.com do **not** count as official — anyone can publish forms and pages there.) |
+| Link on the offline blocklist → at least **0.9 (SCAM)** | Known scam domains are always flagged. |
+
+**Sensitivity setting** shifts the SUSPICIOUS / SCAM thresholds: Low 0.5 / 0.8 · Normal 0.4 / 0.7 · High 0.3 / 0.6.
 
 ---
 
@@ -95,16 +111,25 @@ Explainer (SUSPICIOUS / SCAM only)
 | 1 | Data prep + TF-IDF / LR baseline + ONNX export | ✅ Done |
 | 2 | RoBERTa-Tagalog fine-tune + int8 ONNX export | ✅ Done |
 | 3 | Android app skeleton and screens (English + Filipino) | ✅ Done |
-| 4 | Real detection engine on Android (rules + URL checker + ONNX model) | 🚧 Next — app uses a keyword placeholder for now |
-| 5 | SMS receiver, notification listener, warning pop-up | 🚧 Planned |
-| 6 | Local LLM explainer (Gemma via MediaPipe) | 🚧 Planned |
-| 7 | Room database (history, feedback, trusted contacts) + optional online updates | 🚧 Planned — in-memory sample data for now |
+| 4 | On-device detection engine (rules + URL checker + RoBERTa / baseline ensemble) | ✅ Done |
+| 5 | SMS + chat screening, scam alerts, rule floors, disguised links, official-link cap | ✅ Done |
+| 6 | Local LLM explainer (Gemma via MediaPipe) | 🔄 In progress |
+| 7 | Room database (history, feedback, trusted contacts) + optional online updates | 🚧 Planned — history is in memory for now and resets when the app is closed |
 
-**Android app so far (phase 3):**
+**What the Android app does today:**
+- **Screens real messages automatically, fully offline:**
+  - incoming **SMS** (`SmsReceiver`)
+  - notifications from **Messenger, Messenger Lite, Viber, WhatsApp, GCash, Maya** and the default SMS app
+    (`MessageNotificationListener`)
+  - duplicate messages within 10 seconds are only checked once
+- **Scam alerts:** SCAM → high-priority heads-up notification · SUSPICIOUS → normal notification · SAFE → silent.
+  Alerts have **View details** and **Mark as safe** actions, and Android's automatic "Open link" button is turned off.
+- **Manual check:** paste a message, or **Share → Sipat Kilatis** from any app.
+- **Result screen** highlights the suspicious parts of the message and lists the reasons.
 - Screens: Onboarding · Home dashboard · Check a message · Result · History · Scam guide · Settings
-- Full **English and Filipino** UI, switchable per app
-- **Share → Sipat Kilatis**: share any text from another app to check it
-- Result screen highlights the suspicious parts of the message and lists the reasons
+  (sensitivity, protection on/off, permissions).
+- Full **English and Filipino** UI, switchable per app.
+- Permissions used: `RECEIVE_SMS`, notification access, `POST_NOTIFICATIONS`. **No `INTERNET` permission.**
 
 ---
 
@@ -113,11 +138,15 @@ Explainer (SUSPICIOUS / SCAM only)
 ```
 Sipat-Kilatis/
 ├── app/                          Android app (Kotlin, Jetpack Compose, Material 3)
-│   └── src/main/java/com/example/sipatkilatis/
-│       ├── ui/                   screens, components, theme, AppNavHost, MainViewModel
-│       ├── data/                 scan repository, app preferences
-│       ├── detection/            detector interface (+ temporary placeholder)
-│       └── model/                data classes
+│   ├── src/main/java/com/example/sipatkilatis/
+│   │   ├── SipatApp.kt           app-wide singletons (detector, repo, prefs, alerts, screener)
+│   │   ├── capture/              SmsReceiver, MessageNotificationListener, MessageScreener, ScamAlerts
+│   │   ├── detection/            OnDeviceScamDetector, Preprocessor, RegexRulesEngine, OfflineUrlChecker,
+│   │   │                         OnnxClassifiers (ensemble), RobertaTokenizer, TextNormalizer, RiskScorer
+│   │   ├── ui/                   screens, components, theme, AppNavHost, MainViewModel
+│   │   ├── data/                 scan repository, app preferences
+│   │   └── model/                data classes
+│   └── src/main/assets/          blocklist.txt, tokenizer/ (+ ONNX models, git-ignored)
 ├── gradle/, build.gradle.kts, settings.gradle.kts
 ├── ml/                           Python: data prep, training, model export
 │   ├── data/raw/                 raw dataset (not committed — contains real messages)
@@ -220,7 +249,25 @@ cd ml
    ```powershell
    $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; .\gradlew.bat assembleDebug
    ```
-4. Exported models and tokenizer files go in `app/src/main/assets/` (git-ignored).
+4. Copy the trained models from `ml/models/` into `app/src/main/assets/` (`baseline.onnx`,
+   `scam_classifier_int8.onnx`; git-ignored). The tokenizer files and `blocklist.txt` are already there.
+   If a model is missing, the app falls back to the other model, or to rules + URL checks only.
+
+**Tests**
+
+```powershell
+# Unit tests: normalizer + tokenizer parity with Python, rule / URL messages, risk scorer
+.\gradlew.bat testDebugUnitTest
+
+# On an emulator: both ONNX models vs the Python test vectors (within 0.02), end-to-end timing
+$env:ANDROID_SERIAL = "emulator-5554"; .\gradlew.bat connectedDebugAndroidTest
+```
+
+**Try a scam SMS on the emulator** (open the app once first, then press Home):
+
+```powershell
+adb -s emulator-5554 emu sms send 09171234567 "GCash: Na-lock ang account mo. I-verify agad sa gcash-verify.xyz"
+```
 
 - Package: `com.example.sipatkilatis`
 - Kotlin · Jetpack Compose · Material 3 · AGP 9 · KSP (Room)
@@ -232,8 +279,8 @@ cd ml
 
 **Models**
 - `jcblaise/roberta-tagalog-base` — fine-tuned on our data, exported to int8 ONNX
-- TF-IDF + logistic regression (scikit-learn) — baseline / fallback classifier, exported to ONNX
-- Gemma ~1B via MediaPipe LLM Inference API — explanation generation *(planned)*
+- TF-IDF + logistic regression (scikit-learn) — exported to ONNX; averaged with RoBERTa on-device (ensemble)
+- Gemma ~1B via MediaPipe LLM Inference API — explanation generation *(in progress)*
 
 **Frameworks and libraries**
 - Python: scikit-learn, pandas, openpyxl, PyTorch, Hugging Face Transformers / Datasets / Optimum / Accelerate / Evaluate, ONNX, ONNX Runtime, skl2onnx
