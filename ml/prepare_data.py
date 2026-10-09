@@ -3,7 +3,7 @@ Data prep for Sipat Kilatis.
 
 Reads  data/raw/spam_ham_dataset_updated (1).xlsx  (no header: A = label, B = text)
 Writes data/processed/messages.csv  with columns:
-    text, label (scam|ham), source (real_ph|synthetic|uci), weight, split (train|test), raw_row
+    text, label (scam|ham), source (real_ph|synthetic|uci), weight, split (train|val|test), raw_row
 
 Run:  .venv\\Scripts\\python.exe prepare_data.py
 """
@@ -24,6 +24,7 @@ OUT = ROOT / "data" / "processed" / "messages.csv"
 SEED = 42
 UCI_HAM_TARGET = 1500
 REAL_PH_WEIGHT = 2.0
+VAL_SIZE = 0.1          # share of the non-test rows held out for validation
 
 # The synthetic PH templates in the raw file have their labels inverted
 # ("Send the OTP now..." = ham, "Clinic: your appointment..." = spam). Flip them back.
@@ -235,12 +236,17 @@ def main():
     df["weight"] = (df["source"] == "real_ph").map({True: REAL_PH_WEIGHT, False: 1.0})
     counts(df, f"Step 5: UCI ham down-sampled to {UCI_HAM_TARGET} (real_ph weight={REAL_PH_WEIGHT})")
 
-    # ---- Step 6: test = stratified 20% of real_ph only
+    # ---- Step 6: test = stratified 20% of real_ph only;
+    #      val = 10% of the remaining rows (all sources), used for model selection in phase 2
     ph = df[df["source"] == "real_ph"]
     _, test_idx = train_test_split(ph.index, test_size=0.2, stratify=ph["label"], random_state=SEED)
+    rest = df.drop(test_idx)
+    _, val_idx = train_test_split(rest.index, test_size=VAL_SIZE, stratify=rest["source"] + "_" + rest["label"],
+                                  random_state=SEED)
     df["split"] = "train"
     df.loc[test_idx, "split"] = "test"
-    for split in ["train", "test"]:
+    df.loc[val_idx, "split"] = "val"
+    for split in ["train", "val", "test"]:
         counts(df[df["split"] == split], f"Step 6: {split} split")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

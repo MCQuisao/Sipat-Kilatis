@@ -1,0 +1,75 @@
+{
+  "model_file": "baseline.onnx",
+  "input": {
+    "name": "text",
+    "type": "string tensor, shape [batch, 1]",
+    "preprocessing": "apply normalize() from ml/text_normalize.py first (see its docstring)"
+  },
+  "outputs": {
+    "label": "int64 [batch], 1 = scam",
+    "probabilities": "float [batch, 2], column 1 = P(scam)"
+  },
+  "scam_class_index": 1,
+  "threshold": 0.5,
+  "features": {
+    "word": {
+      "ngram_range": [
+        1,
+        2
+      ],
+      "token_pattern": "\\b\\w\\w+\\b"
+    },
+    "char": {
+      "ngram_range": [
+        2,
+        5
+      ],
+      "max_features": 30000
+    }
+  },
+  "onnx_runtime_note": "uses the com.microsoft Tokenizer op: needs the full onnxruntime-android package",
+  "metrics": {
+    "val_all": {
+      "n": 310,
+      "precision": 0.9921,
+      "recall": 0.9692,
+      "f1": 0.9805,
+      "fpr_ham": 0.0056
+    },
+    "val_real_ph": {
+      "n": 69,
+      "precision": 0.9767,
+      "recall": 0.9767,
+      "f1": 0.9767,
+      "fpr_ham": 0.0385
+    },
+    "val_uci": {
+      "n": 233,
+      "precision": 1.0,
+      "recall": 0.9639,
+      "f1": 0.9816,
+      "fpr_ham": 0.0
+    },
+    "val_synthetic": {
+      "n": 8,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fpr_ham": 0.0
+    },
+    "test_real_ph": {
+      "n": 173,
+      "precision": 0.9643,
+      "recall": 0.9908,
+      "f1": 0.9774,
+      "fpr_ham": 0.0625
+    },
+    "test_real_ph_onnx": {
+      "n": 173,
+      "precision": 0.9643,
+      "recall": 0.9908,
+      "f1": 0.9774,
+      "fpr_ham": 0.0625
+    }
+  }
+}

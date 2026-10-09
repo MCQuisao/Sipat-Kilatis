@@ -77,9 +77,14 @@ Onboarding, Home dashboard, Check a message, Result, Warning pop-up, History, Sc
    - The file is concatenated blocks: UCI | real PH | UCI | synthetic PH | real PH tail. Source comes from
      block boundaries (UCI first/last message anchors), not content: much real PH spam is English.
    - **Synthetic block labels are inverted in the raw file** and are flipped back in the script.
-   - Test set = 20% of real_ph only. real_ph weight = 2. UCI ham down-sampled to 1,500.
-2. `train_baseline.py`: TF-IDF + logistic regression → metrics per source → export to ONNX (skl2onnx).
-   Its `normalize()` (strip `<REAL NAME>`, URL/amount/number tokens) must be mirrored on Android.
+   - Test set = 20% of real_ph only. Val = 10% of the remaining rows (all sources).
+     real_ph weight = 2. UCI ham down-sampled to 1,500.
+2. `train_baseline.py`: TF-IDF (word 1-2 + char 2-5 n-grams) + logistic regression → metrics per source
+   → `models/baseline.onnx` (skl2onnx; string input; uses the com.microsoft Tokenizer op, so needs the
+   full onnxruntime-android package) + `baseline_config.json` + `baseline_test_vectors.json`.
+   `predict_baseline.py "msg"` runs the ONNX model from the command line.
+   - `normalize()` in `text_normalize.py` (strip `<REAL NAME>`, lowercase, URL/amount/number → tokens)
+     runs BEFORE the model and must be mirrored exactly on Android; check against the test vectors.
 3. Fine-tune RoBERTa-tagalog-base → export with Optimum to ONNX → dynamic int8 quantization.
 4. Copy exported models + tokenizer files into `app/src/main/assets/` for the app.
    (Model binaries are git-ignored; keep them small enough to ship in the APK.)
