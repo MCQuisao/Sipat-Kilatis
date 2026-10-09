@@ -435,6 +435,10 @@ state no license; they are credited here and their data is not redistributed.
   **Allow restricted settings** before notification access can be granted.
 - **Only screens what Android lets it see:** messages hidden or removed by carrier or phone spam filters
   never reach the app.
+- **Messenger hides messages that contain links:** its notification only says "A link was sent to you", so the
+  real text never reaches the app. For these, the app posts a notice instead of a verdict: the user copies the
+  message in Messenger and taps the notice, which opens *Check a message* with the text filled in. SMS, Viber,
+  WhatsApp, and other Messenger messages are checked automatically.
 
 ---
 
