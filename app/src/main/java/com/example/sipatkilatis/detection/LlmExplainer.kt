@@ -10,15 +10,19 @@ import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Verdict
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Short explanation written by a small local LLM (Gemma 3 1B, int4) with the MediaPipe LLM Inference API.
@@ -34,6 +38,7 @@ class LlmExplainer(context: Context) {
     private val appContext = context.applicationContext
     private val mutex = Mutex()
     private var llm: LlmInference? = null
+    private val busy = AtomicInteger(0)   // generations currently running
 
     companion object {
         private const val TAG = "SipatKilatis"
@@ -86,29 +91,49 @@ class LlmExplainer(context: Context) {
                 .setRandomSeed(7)
                 .build())
         val prompt = buildPrompt(result, filipino)
+        // MediaPipe rules (breaking them crashes the whole app from native code):
+        //  - no other LLM calls (e.g. sizeInTokens) while a generation is running -> count tokens BEFORE starting
+        //  - never let an exception escape the progress callback
+        //  - don't close the session until it reported done=true (also after a cancel)
+        val promptTokens = runCatching { engine.sizeInTokens(prompt) }.getOrDefault(-1)
+        val generationDone = CompletableDeferred<Unit>()
+        busy.incrementAndGet()
         val start = System.currentTimeMillis()
         var firstTokenMs = -1L
+        var chunks = 0
+        var stopped = false
         val text = StringBuilder()
         session.addQueryChunk(prompt)
-        var chunks = 0
         session.generateResponseAsync { partial, done ->
-            if (firstTokenMs < 0) firstTokenMs = System.currentTimeMillis() - start
-            chunks++
-            text.append(partial)
-            val cleaned = clean(text.toString())
-            trySend(cleaned)
-            val words = cleaned.split(Regex("\\s+")).size
-            // Stop on: model finished, answer too long, or endless near-empty output (seen on some phones)
-            if (done || words > MAX_WORDS || chunks > MAX_CHUNKS) {
-                Log.d(TAG, "LLM explanation: first token ${firstTokenMs} ms, total ${System.currentTimeMillis() - start} ms, " +
-                    "$words words, prompt ${engine.sizeInTokens(prompt)} tokens")
-                if (!done) session.cancelGenerateResponseAsync()
-                channel.close()   // ends the flow (errors / slowness are handled by the caller's time limit)
+            try {
+                if (done) generationDone.complete(Unit)
+                if (stopped) return@generateResponseAsync
+                if (firstTokenMs < 0) firstTokenMs = System.currentTimeMillis() - start
+                chunks++
+                text.append(partial ?: "")
+                val cleaned = clean(text.toString())
+                trySend(cleaned)
+                val words = cleaned.split(Regex("\\s+")).size
+                // Stop on: model finished, answer too long, or endless near-empty output (seen on some phones)
+                if (done || words > MAX_WORDS || chunks > MAX_CHUNKS) {
+                    stopped = true
+                    Log.d(TAG, "LLM explanation: first token $firstTokenMs ms, total ${System.currentTimeMillis() - start} ms, " +
+                        "$words words, prompt $promptTokens tokens")
+                    channel.close()   // ends the flow; awaitClose below cancels (if needed) and cleans up
+                }
+            } catch (t: Throwable) {
+                Log.e(TAG, "LLM callback error", t)
+                channel.close(t)
             }
         }
         awaitClose {
-            runCatching { session.cancelGenerateResponseAsync() }
-            runCatching { session.close() }
+            if (!generationDone.isCompleted) runCatching { session.cancelGenerateResponseAsync() }
+            // Wait for MediaPipe to confirm it stopped before closing; if it never does, leave the session open
+            // (a small leak) rather than crash the app.
+            val stoppedCleanly = runBlocking { withTimeoutOrNull(5_000) { generationDone.await() } } != null
+            if (stoppedCleanly) runCatching { session.close() }
+            else Log.w(TAG, "LLM session did not stop after cancel; not closing it")
+            busy.decrementAndGet()
         }
     }.flowOn(Dispatchers.Default)
 
@@ -143,8 +168,15 @@ class LlmExplainer(context: Context) {
         .replace(Regex("(?m)^\\s*[*â€¢]\\s+"), "- ")
         .trim()
 
-    /** Drop the loaded model, e.g. after it stalled; the next explanation reloads it. */
+    /**
+     * Drop the loaded model, e.g. after it stalled; the next explanation reloads it.
+     * Skipped while a generation is still running: closing the engine under it would crash the app.
+     */
     suspend fun reset() = mutex.withLock {
+        if (busy.get() > 0) {
+            Log.w(TAG, "LLM reset skipped: a generation is still running")
+            return@withLock
+        }
         runCatching { llm?.close() }
         llm = null
     }

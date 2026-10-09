@@ -12,7 +12,15 @@
             <action android:name="android.provider.Telephony.SMS_DELIVER" />
         </intent>
     </queries>
-    <!-- No INTERNET permission yet: everything runs on-device. (Optional online updates come in phase 7.) -->
+    <!-- Fully offline: ONNX Runtime's library manifest adds INTERNET and ACCESS_NETWORK_STATE, which no code in
+         this app uses. Removing them means Android itself blocks all network access, so message content provably
+         cannot leave the phone. (If the optional online blocklist update is built in phase 7, add them back there.) -->
+    <uses-permission
+        android:name="android.permission.INTERNET"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
 
     <application
         android:name=".SipatApp"

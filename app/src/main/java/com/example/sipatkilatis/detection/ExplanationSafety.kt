@@ -16,6 +16,9 @@ object ExplanationSafety {
         "ibigay", "provide", "share", "i-share", "reply", "i-reply", "enter", "login", "log", "mag-login",
         "claim", "i-claim", "register", "mag-register", "update", "i-update", "confirm", "i-confirm",
         "visit", "bisitahin", "download", "install",
+        // Tagalog "mag-" forms ("Sanayang mag-verify ng account" was a real Gemma output)
+        "mag-verify", "magverify", "mag-click", "magclick", "mag-log-in", "mag-login", "maglogin", "mag-reply",
+        "magreply", "mag-send", "magsend", "mag-update", "mag-claim", "mag-confirm", "mag-download",
     )
     private val negations = setOf(
         "don't", "dont", "do", "never", "avoid", "ignore", "huwag", "wag", "hindi", "iwasan", "not",

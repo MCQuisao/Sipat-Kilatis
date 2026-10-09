@@ -101,6 +101,9 @@ SipatKilatis/
      (rejects answers that tell the user to verify / click / send / ibigay ... without a negation; a 1B model
      sometimes repeats the scammer's instruction). Time limit 20 s (measured ~11-13 s on a Snapdragon 732G GPU);
      on timeout the model is reset. Filipino prompt is written in Tagalog (the model then answers in Tagalog).
+   - MediaPipe crash rules (a broken rule kills the app from native code, no Java stack in the UI): no other
+     LLM calls (e.g. `sizeInTokens`) while generating; never throw from the progress callback; close a session
+     only after done=true; never close the engine while a generation runs (`LlmExplainer.busy`).
    - Measure on a phone with `LlmOnDeviceTest` via `adb shell am instrument` (NOT Gradle connected tests:
      they uninstall the app, which deletes the pushed model file).
 5. **Storage**
@@ -140,6 +143,8 @@ Setup: `cd ml; .\setup_venv.ps1` (Windows) or `cd ml && ./setup_venv.sh` (macOS/
 
 - **Privacy first**: message content never leaves the device. No analytics on message text, no cloud APIs.
 - **Offline always**: every feature works in airplane mode. Network is optional, only for updates.
+  The manifest REMOVES `INTERNET` and `ACCESS_NETWORK_STATE` (ONNX Runtime's library adds them; no code uses
+  them), so Android blocks all network access. Add them back only for a deliberate online feature.
 - Keep code **simple and readable** (it's a hackathon). Prefer small, obvious classes over clever abstractions.
 - Add short comments explaining intent.
 - Weights and thresholds above are the source of truth — change them here first if they change.

@@ -14,6 +14,9 @@ class ExplanationSafetyTest {
         assertFalse(ExplanationSafety.isSafe("This is a scam. Please click the link to secure your account."))
         assertFalse(ExplanationSafety.isSafe("Tip: Send the OTP to unlock your account."))
         assertFalse(ExplanationSafety.isSafe("Payo: Ibigay agad ang OTP para hindi ma-lock."))
+        // Real Gemma output (after the crash fix): garbled "get used to verifying the account"
+        assertFalse(ExplanationSafety.isSafe("Ang text ay scam dahil nagpapanggap ang link ay isang nakatagong gcash " +
+            "website para mag-log-in ng account. Sanayang mag-verify ng account."))
     }
 
     @Test
