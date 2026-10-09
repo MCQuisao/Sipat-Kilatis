@@ -337,9 +337,7 @@ adb -s emulator-5554 emu sms send 09171234567 "GCash: Na-lock ang account mo. I-
 **AI-assisted development**
 - Claude Code
 
----
-
-## Team
+## Team: LFInternship
 - Ahl B. Satingin
 - Jerwin L. Alvarez
 - Jenelle G. Salcedo
