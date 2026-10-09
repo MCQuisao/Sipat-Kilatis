@@ -85,7 +85,11 @@ Onboarding, Home dashboard, Check a message, Result, Warning pop-up, History, Sc
    `predict_baseline.py "msg"` runs the ONNX model from the command line.
    - `normalize()` in `text_normalize.py` (strip `<REAL NAME>`, lowercase, URL/amount/number → tokens)
      runs BEFORE the model and must be mirrored exactly on Android; check against the test vectors.
-3. Fine-tune RoBERTa-tagalog-base → export with Optimum to ONNX → dynamic int8 quantization.
+3. `train_transformer.py`: fine-tune RoBERTa-tagalog-base (same `normalize()` input, max_length 128,
+   best epoch by val F1) → `models/roberta_best/`. Colab backup: `train_transformer_colab.ipynb`.
+   `export_onnx.py`: Optimum ONNX export → dynamic int8 (ARM64) → `models/scam_classifier_int8.onnx` (~110 MB)
+   + `models/tokenizer/` + `models/test_vectors.json` (token ids + expected P(scam)).
+   `reference_inference.py` = exact steps Android must copy (inputs input_ids + attention_mask, softmax index 1).
 4. Copy exported models + tokenizer files into `app/src/main/assets/` for the app.
    (Model binaries are git-ignored; keep them small enough to ship in the APK.)
 
