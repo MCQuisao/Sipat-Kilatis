@@ -152,6 +152,8 @@
     <string name="alert_view">View details</string>
     <string name="alert_mark_safe">Mark as safe</string>
     <string name="alert_marked_safe">Sender added to trusted contacts</string>
+    <string name="alert_hidden_link_title">Link received on %1$s</string>
+    <string name="alert_hidden_link_text">%1$s hides links in its notifications, so this one could not be checked. Before opening it: long-press the message, tap Copy, then tap here to check it.</string>
 
     <!-- Permissions -->
     <string name="perm_sms">SMS screening</string>

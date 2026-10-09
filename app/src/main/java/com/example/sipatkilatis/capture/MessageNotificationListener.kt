@@ -81,6 +81,23 @@ class MessageNotificationListener : NotificationListenerService() {
         "com.paymaya",                  // Maya
     )
 
+    /**
+     * Placeholder text a chat app shows instead of a message that contains a link (the real text is hidden).
+     * Whole-notification match only, so a real message that merely mentions a link is still screened.
+     */
+    private val hiddenLinkText = Regex(
+        // Leading symbols are skipped: Messenger writes "🔗 A link was sent to you"
+        """^[^\p{L}\p{N}]*(a link was sent to you|[^:\n]{1,40} (sent|shared) a link|nagpadala ng link|may ipinadalang link)\.?\s*$""",
+        RegexOption.IGNORE_CASE)
+
+    /** Xiaomi's SMS app puts "4 messages | " in front of the newest message; it is not part of the message. */
+    private val messageCountPrefix = Regex("""^\s*\d+\s+(new\s+)?(messages?|mensahe)\s*\|\s*""", RegexOption.IGNORE_CASE)
+
+    private val appNames = mapOf(
+        "com.facebook.orca" to "Messenger", "com.facebook.mlite" to "Messenger Lite", "com.viber.voip" to "Viber",
+        "org.telegram.messenger" to "Telegram", "com.whatsapp" to "WhatsApp", "com.whatsapp.w4b" to "WhatsApp",
+    )
+
     // Notification key + text already screened, so a chat app re-posting the same notification is ignored
     private val seen = object : LinkedHashMap<String, Boolean>(64, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>) = size > 300
@@ -106,6 +123,9 @@ class MessageNotificationListener : NotificationListenerService() {
         fun skip(reason: String) { Log.d(TAG, "notification from $pkg: skipped ($reason)") }
         if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return skip("group summary")
         if (n.flags and Notification.FLAG_ONGOING_EVENT != 0) return skip("ongoing")
+        // Status notices such as Messenger's "Chat heads active" come from a background service, not a message
+        if (n.flags and Notification.FLAG_FOREGROUND_SERVICE != 0 || n.category == Notification.CATEGORY_SERVICE)
+            return skip("service notice")
         // Old messages re-posted by the app (e.g. after a reboot) are not new: they were screened already
         val ageMs = System.currentTimeMillis() - n.`when`
         if (n.`when` > 0 && ageMs > MAX_AGE_MS) return skip("old message, ${ageMs / 1000} s")
@@ -115,6 +135,11 @@ class MessageNotificationListener : NotificationListenerService() {
             val key = "${sbn.key}|${text.hashCode()}"
             if (seen.containsKey(key)) return skip("already screened")
             seen[key] = true
+        }
+        if (hiddenLinkText.matches(text)) {
+            Log.d(TAG, "notification from $pkg: link hidden by the app, asking the user to check it")
+            applicationContext.graph.alerts.showHiddenLink(appNames[pkg] ?: "this app", sbn.key)
+            return
         }
         Log.d(TAG, "notification from $pkg: screening")
         val graph = applicationContext.graph
@@ -138,7 +163,7 @@ class MessageNotificationListener : NotificationListenerService() {
             return sender to styleText
         }
         val text = (extras.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: extras.getCharSequence(Notification.EXTRA_TEXT))
-            ?.toString()?.takeIf { it.isNotBlank() } ?: return null
+            ?.toString()?.replace(messageCountPrefix, "")?.takeIf { it.isNotBlank() } ?: return null
         return extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() to text
     }
 }

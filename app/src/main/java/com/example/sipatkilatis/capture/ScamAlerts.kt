@@ -33,6 +33,8 @@ class ScamAlerts(private val context: Context, private val prefs: AppPreferences
         const val CHANNEL_SUSPICIOUS = "suspicious_alerts"
         const val EXTRA_SCAN_ID = "scan_id"
         const val ACTION_MARK_SAFE = "com.example.sipatkilatis.MARK_SAFE"
+        /** Open the Check screen filled with the clipboard (the user copied the hidden message first). */
+        const val EXTRA_CHECK_CLIPBOARD = "check_clipboard"
     }
 
     /** Context whose strings follow the language chosen in the app (background code has no Activity). */
@@ -97,6 +99,41 @@ class ScamAlerts(private val context: Context, private val prefs: AppPreferences
             nm.notify(id, notification)
         } catch (_: SecurityException) {
             // Permission revoked between the check and the call; nothing else to do
+        }
+    }
+
+    /**
+     * Some chat apps (Messenger) replace a message that contains a link with "A link was sent to you" in the
+     * notification, so the real text never reaches us. We can't judge it, so instead of staying silent we post a
+     * quiet notice that asks the user to copy the message into the app before opening the link.
+     */
+    fun showHiddenLink(appName: String, key: String) {
+        val nm = NotificationManagerCompat.from(context)
+        if (!nm.areNotificationsEnabled()) return
+        val ctx = localized()
+        val id = ("hidden-link|$key").hashCode()
+        val open = PendingIntent.getActivity(
+            context, id,
+            Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_CHECK_CLIPBOARD, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val text = ctx.getString(R.string.alert_hidden_link_text, appName)
+        val notification = NotificationCompat.Builder(context, CHANNEL_SUSPICIOUS)
+            .setSmallIcon(R.drawable.ic_stat_shield)
+            .setContentTitle(ctx.getString(R.string.alert_hidden_link_title, appName))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .setAllowSystemGeneratedContextualActions(false)
+            .build()
+        try {
+            nm.notify(id, notification)
+        } catch (_: SecurityException) {
         }
     }
 }

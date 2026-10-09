@@ -152,6 +152,8 @@
     <string name="alert_view">Tingnan</string>
     <string name="alert_mark_safe">Ligtas ito</string>
     <string name="alert_marked_safe">Naidagdag sa mga pinagkakatiwalaang contact</string>
+    <string name="alert_hidden_link_title">May link na dumating sa %1$s</string>
+    <string name="alert_hidden_link_text">Itinatago ng %1$s ang mga link sa notification, kaya hindi ito nasuri. Bago ito buksan: i-long-press ang message, i-tap ang Copy, saka i-tap ito para masuri.</string>
 
     <!-- Permissions -->
     <string name="perm_sms">Pagsusuri ng SMS</string>

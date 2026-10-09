@@ -29,19 +29,27 @@ class MessageScreener(private val graph: AppGraph) {
     /**
      * The same text arriving twice within [WINDOW_MS] is one message: e.g. the SMS receiver AND the
      * SMS app's notification, or a chat app re-posting its notification.
+     * Notifications often wrap or cut the text (Xiaomi: "4 messages | <text>", or "<text>…"), so one text
+     * containing the other also counts, as long as the shorter one is long enough not to match by chance.
      */
     @Synchronized
     private fun isDuplicate(text: String): Boolean {
         val now = System.currentTimeMillis()
         recent.entries.removeAll { now - it.value > WINDOW_MS }
-        val key = text.lowercase().replace(Regex("\\s+"), " ")
-        if (recent.containsKey(key)) return true
+        val key = text.lowercase().replace(Regex("\\s+"), " ").trimEnd('…', '.', ' ')
+        if (recent.keys.any { it == key || sameMessage(it, key) }) return true
         recent[key] = now
         return false
+    }
+
+    private fun sameMessage(a: String, b: String): Boolean {
+        val (short, long) = if (a.length <= b.length) a to b else b to a
+        return short.length >= MIN_OVERLAP && long.contains(short)
     }
 
     companion object {
         private const val TAG = "SipatKilatis"
         const val WINDOW_MS = 10_000L
+        private const val MIN_OVERLAP = 20
     }
 }
