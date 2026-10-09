@@ -14,7 +14,8 @@ import java.io.File
 
 /**
  * Accuracy of the WHOLE app pipeline (rules + URL checker + RoBERTa/baseline ensemble + risk scorer), not just
- * one model, on the held-out real PH test split (split == test in messages.csv). Normal sensitivity, no sender.
+ * one model, on the held-out real PH test split (split == test in messages.csv). No sender.
+ * Sensitivity: Normal by default; pass `-e sensitivity LOW|NORMAL|HIGH` to `am instrument` to measure another level.
  *
  * The dataset is not in git, so push it to the phone first (see README → Tests):
  *   adb push ml/data/processed/messages.csv /sdcard/Android/data/com.example.sipatkilatis/files/eval/messages.csv
@@ -35,7 +36,9 @@ class SystemEvalTest {
         val iText = header.indexOf("text"); val iLabel = header.indexOf("label"); val iSplit = header.indexOf("split")
         val test = rows.drop(1).filter { it.size > iSplit && it[iSplit] == "test" }.map { it[iText] to (it[iLabel] == "scam") }
 
-        val detector = OnDeviceScamDetector(app, { Sensitivity.NORMAL }, { emptyList() })
+        val sensitivity = InstrumentationRegistry.getArguments().getString("sensitivity")
+            ?.let { Sensitivity.valueOf(it.uppercase()) } ?: Sensitivity.NORMAL
+        val detector = OnDeviceScamDetector(app, { sensitivity }, { emptyList() })
         detector.warmUp()
 
         val scamOnly = Counts(); val anyWarning = Counts(); val mlOnly = Counts()
@@ -59,7 +62,7 @@ class SystemEvalTest {
 
         val report = buildString {
             appendLine("Full pipeline on the held-out real PH test set: n=${test.size} " +
-                "(${test.count { it.second }} scam, ${test.count { !it.second }} legit), Normal sensitivity")
+                "(${test.count { it.second }} scam, ${test.count { !it.second }} legit), ${sensitivity.name.lowercase()} sensitivity")
             appendLine("Both ONNX models loaded for $bothModels / ${test.size} messages; avg %.0f ms per message".format(avgMs))
             appendLine(anyWarning.line("App warns (SUSPICIOUS or SCAM)"))
             appendLine(scamOnly.line("App says SCAM"))
@@ -67,7 +70,7 @@ class SystemEvalTest {
             appendLine("Mistakes (scam shown as SAFE, or legit shown with a warning):")
             append(mistakes)
         }
-        File(dir, "system_eval.txt").writeText(report, Charsets.UTF_8)
+        File(dir, "system_eval_${sensitivity.name.lowercase()}.txt").writeText(report, Charsets.UTF_8)
         report.lines().forEach { Log.d("SipatKilatis", "EVAL $it") }
 
         assertTrue("ONNX models missing: copy them into app/src/main/assets", bothModels == test.size)

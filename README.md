@@ -59,6 +59,17 @@ same `OnDeviceScamDetector` the app uses, at Normal sensitivity. The rules and U
   crypto "kumikita ako ng isang milyon" pitch — all scored just under the SUSPICIOUS line (0.31–0.40)
 - false alarm: a real foodpanda delivery-tracking text with a link (flagged SUSPICIOUS)
 
+**Sensitivity setting** (Settings → Sensitivity), measured the same way on the same 173 messages:
+
+| Setting | Scams warned (any level) | Scams at **SCAM** level (pop-up alert) | False alarms (of 64 legit) | F1 |
+|---|---|---|---|---|
+| Low | 103 / 109 | 1 / 109 | 1 | 0.967 |
+| **Normal** (default) | 106 / 109 | 10 / 109 | 1 | 0.981 |
+| High | **109 / 109** | **59 / 109** | 3 | **0.986** |
+
+Normal is the default because it keeps false alarms lowest; High catches every scam in the test set and sends
+more than half of them as a pop-up SCAM alert, at the cost of 2 more false alarms.
+
 - **Precision**: when the app says *scam*, how often it's right.
 - **Recall**: out of all real scams, how many it catches.
 - **F1**: one score balancing precision and recall.
@@ -317,7 +328,8 @@ adb shell am instrument -w -e class com.example.sipatkilatis.detection.LlmOnDevi
 adb shell am instrument -w -e class com.example.sipatkilatis.detection.SystemEvalTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
 adb push ml\data\processed\messages.csv /sdcard/Android/data/com.example.sipatkilatis/files/eval/messages.csv
 adb shell am instrument -w -e class com.example.sipatkilatis.detection.SystemEvalTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
-adb shell cat /sdcard/Android/data/com.example.sipatkilatis/files/eval/system_eval.txt
+adb shell cat /sdcard/Android/data/com.example.sipatkilatis/files/eval/system_eval_normal.txt
+# Other levels: add  -e sensitivity LOW  or  -e sensitivity HIGH  to the am instrument command
 
 # Run demo mode from a computer and read the results from the log
 adb shell am start -n com.example.sipatkilatis/.MainActivity --ez open_demo true
@@ -389,9 +401,9 @@ state no license; they are credited here and their data is not redistributed.
 
 - **Small test set:** 173 held-out real PH messages. One message moves FPR by ~1.6 points, so treat the
   scores as a strong first result, not a final benchmark.
-- **Most scams are labelled SUSPICIOUS, not SCAM:** on the test set, only 10 of 109 scams reach the SCAM level
-  (heads-up alert); the rest get a SUSPICIOUS warning (normal notification). Raising them to SCAM needs a
-  retune of the weights / thresholds, checked against the false-alarm rate.
+- **On Normal sensitivity, most scams are labelled SUSPICIOUS, not SCAM:** only 10 of 109 test scams reach the
+  SCAM level (pop-up alert); the rest get a SUSPICIOUS warning (normal notification). High sensitivity raises this
+  to 59 of 109, with 3 false alarms instead of 1 (see Results).
 - **Sample blocklist:** `blocklist.txt` is a short hackathon list; there is no online update (by design — no internet permission).
 - **Gemma is slow on mid-range phones:** ~10 s to load once, ~11 s per explanation. The template explanation
   is shown instantly meanwhile.
