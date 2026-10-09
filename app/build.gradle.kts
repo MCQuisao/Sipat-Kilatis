@@ -1,18 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)   // Room annotation processing
 }
 
 android {
     namespace = "com.example.sipatkilatis"
     compileSdk {
-        version = release(37)
+        version = release(37)   // compile against the newest SDK; runtime behaviour follows targetSdk
     }
 
     defaultConfig {
         applicationId = "com.example.sipatkilatis"
-        minSdk = 24
-        targetSdk = 37
+        minSdk = 26
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -33,6 +34,9 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        generateLocaleConfig = true   // builds the English / Filipino list for per-app language settings
+    }
 }
 
 dependencies {
@@ -44,6 +48,19 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // Sipat Kilatis
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.onnxruntime.android)      // ML classifier (phase 4)
+    implementation(libs.mediapipe.tasks.genai)    // local LLM explainer (phase 6)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

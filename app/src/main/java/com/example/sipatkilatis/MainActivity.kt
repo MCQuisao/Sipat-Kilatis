@@ -1,47 +1,43 @@
 package com.example.sipatkilatis
 
+import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import com.example.sipatkilatis.ui.AppNavHost
+import com.example.sipatkilatis.ui.MainViewModel
 import com.example.sipatkilatis.ui.theme.SipatKilatisTheme
 
-class MainActivity : ComponentActivity() {
+/**
+ * Single activity hosting all Compose screens.
+ * AppCompatActivity (not ComponentActivity) so the per-app language switch works on Android 8+.
+ */
+class MainActivity : AppCompatActivity() {
+    private val vm: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (savedInstanceState == null) handleShareIntent(intent)   // not again after rotation / language change
         setContent {
             SipatKilatisTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                AppNavHost(vm)
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    // Activity is singleTop: a share while the app is open arrives here
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleShareIntent(intent)
+    }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SipatKilatisTheme {
-        Greeting("Android")
+    /** "Share → Sipat Kilatis" from any messaging app puts the text into the Check screen. */
+    private fun handleShareIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let(vm::onSharedText)
+        }
     }
 }

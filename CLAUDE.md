@@ -29,9 +29,15 @@ SipatKilatis/
 - Package / namespace / applicationId: **`com.example.sipatkilatis`** (use this, NOT `com.scamshield.app`).
 - App name: **"Sipat Kilatis"**.
 - Kotlin, Jetpack Compose, Material 3.
-- Target spec: **minSdk 26, targetSdk 34**. (The template was generated with minSdk 24 / targetSdk 37 /
-  compileSdk 37 — align `app/build.gradle.kts` with the spec when Android work starts.)
+- **minSdk 26, targetSdk 34, compileSdk 37**. AGP 9 (built-in Kotlin), KSP for Room.
 - Dependencies use the version catalog in `gradle/libs.versions.toml`.
+- Code layout (`com.example.sipatkilatis`): `ui/` (screens, components, theme, `AppNavHost`, `MainViewModel`),
+  `data/` (repository + preferences), `detection/` (engine interfaces), `model/` (data classes).
+  Single `MainActivity` (AppCompatActivity, needed for per-app language) + one shared `MainViewModel`.
+- Placeholders to replace: `PlaceholderDetector` (phase 4), `FakeScanRepository` → Room (phase 7),
+  permission buttons (phase 5), online update button (phase 7).
+- Strings: English in `res/values/`, Filipino in `res/values-fil/` (tag `fil`). Every user-facing string goes in both.
+- Build from a terminal: `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; .\gradlew.bat assembleDebug`.
 
 ## Architecture (all on-device)
 

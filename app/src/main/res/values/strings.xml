@@ -1,3 +1,143 @@
 <resources>
     <string name="app_name">Sipat Kilatis</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="add">Add</string>
+    <string name="lang_english">English</string>
+    <string name="lang_filipino">Filipino</string>
+
+    <!-- Verdicts -->
+    <string name="verdict_safe">Safe</string>
+    <string name="verdict_suspicious">Suspicious</string>
+    <string name="verdict_scam">Scam</string>
+
+    <!-- Onboarding -->
+    <string name="onb_title_1">Spot scams before they get you</string>
+    <string name="onb_body_1">Sipat Kilatis checks your texts and chat messages for scams: fake GCash or bank alerts, parcel fees, prize claims, and more. It works in English, Filipino, and Taglish.</string>
+    <string name="onb_title_2">Your messages never leave your phone</string>
+    <string name="onb_body_2">Every check happens on your phone, even in airplane mode. No message is uploaded, stored online, or shared with anyone.</string>
+    <string name="onb_title_3">Choose your language</string>
+    <string name="onb_body_3">You can change this anytime in Settings.</string>
+    <string name="onb_perm_title">Automatic checking</string>
+    <string name="onb_perm_sms">Check incoming SMS</string>
+    <string name="onb_perm_notif">Check chat apps (Messenger, Viber…)</string>
+    <string name="onb_perm_later">You can turn these on later in Settings.</string>
+    <string name="onb_next">Next</string>
+    <string name="onb_skip">Skip</string>
+    <string name="onb_start">Get started</string>
+    <string name="perm_placeholder">Permission requests are added in a later update.</string>
+
+    <!-- Home -->
+    <string name="home_protection_on">Protection is on</string>
+    <string name="home_protection_off">Protection is off</string>
+    <string name="home_protection_on_body">New messages are checked automatically, right on your phone.</string>
+    <string name="home_protection_off_body">Turn it on to check new messages automatically.</string>
+    <string name="home_offline_badge">Offline protected</string>
+    <string name="home_scanned">Messages checked</string>
+    <string name="home_caught">Scams caught</string>
+    <string name="home_check_button">Check a message</string>
+    <string name="home_check_hint">Paste or share a text you\'re unsure about</string>
+    <string name="home_history">History</string>
+    <string name="home_guide">Scam guide</string>
+    <string name="home_settings">Settings</string>
+
+    <!-- Check a message -->
+    <string name="check_title">Check a message</string>
+    <string name="check_label">Paste the message here</string>
+    <string name="check_hint">e.g. Your account is locked. Verify now at…</string>
+    <string name="check_paste">Paste</string>
+    <string name="check_clear">Clear</string>
+    <string name="check_scan">Scan message</string>
+    <string name="check_scanning">Checking on your phone…</string>
+    <string name="check_privacy">Checked on your phone. Nothing is uploaded.</string>
+    <string name="check_share_tip">Tip: in any messaging app, long-press a message → Share → Sipat Kilatis.</string>
+
+    <!-- Result -->
+    <string name="result_title">Result</string>
+    <string name="result_headline_safe">This message looks safe</string>
+    <string name="result_headline_suspicious">Be careful with this message</string>
+    <string name="result_headline_scam">This looks like a scam</string>
+    <string name="result_risk">Risk score: %1$d%%</string>
+    <string name="result_parts">Model %1$d%% · Links %2$d%% · Phrases %3$d%%</string>
+    <string name="result_message">The message</string>
+    <string name="result_highlight_note">Risky parts are highlighted.</string>
+    <string name="result_why">Why?</string>
+    <string name="result_explanation_intro">We found these warning signs:</string>
+    <string name="result_explanation_safe">We didn\'t find common scam signs. Still, never share your OTP, PIN, or password with anyone.</string>
+    <string name="result_todo">What to do now</string>
+    <string name="result_preview_note">Demo result: the full detection engine is not connected yet.</string>
+    <string name="result_scan_another">Check another message</string>
+    <string name="todo_scam_1">Don\'t tap any link in the message.</string>
+    <string name="todo_scam_2">Never share your OTP, PIN, or password.</string>
+    <string name="todo_scam_3">Don\'t send money or load.</string>
+    <string name="todo_scam_4">Block the sender and delete the message.</string>
+    <string name="todo_scam_5">Report scams to the CICC hotline 1326.</string>
+    <string name="todo_suspicious_1">Don\'t tap any link until you\'re sure.</string>
+    <string name="todo_suspicious_2">Contact the company through its official app or hotline, not the number in the message.</string>
+    <string name="todo_suspicious_3">Never share your OTP or PIN.</string>
+    <string name="todo_safe_1">No action needed.</string>
+    <string name="todo_safe_2">If something still feels off, ask someone you trust.</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_all">All</string>
+    <string name="history_empty">No scans here yet.</string>
+    <string name="source_sms">SMS</string>
+    <string name="source_notification">Chat app</string>
+    <string name="source_manual">Checked by you</string>
+
+    <!-- Scam guide -->
+    <string name="guide_title">Scam guide</string>
+    <string name="guide_intro">Common scams in the Philippines and how to spot them.</string>
+    <string name="guide_example">Example</string>
+    <string name="guide_spot">How to spot it</string>
+
+    <string name="guide_ewallet_title">Fake e-wallet or bank alert</string>
+    <string name="guide_ewallet_example">"GCash: Your account is temporarily locked. Verify within 24 hours at gcash-verify.xyz or it will be closed."</string>
+    <string name="guide_ewallet_tips">• Banks and e-wallets never send login links by text.\n• Check the link: the real sites are gcash.com, maya.ph, bdo.com.ph, bpi.com.ph.\n• Threats like "will be closed" or "within 24 hours" are a red flag.</string>
+
+    <string name="guide_delivery_title">Parcel delivery fee</string>
+    <string name="guide_delivery_example">"J&amp;T: Your parcel is on hold due to unpaid delivery fee of P150. Pay here: jnt-ph.top/pay"</string>
+    <string name="guide_delivery_tips">• Were you expecting a parcel? Check the order in the shopping app itself.\n• Couriers don\'t ask for fees through random links.\n• Odd endings like .top, .xyz, .click are common in scam links.</string>
+
+    <string name="guide_job_title">Easy job offer</string>
+    <string name="guide_job_example">"Hiring! Earn P1,500–P5,000 daily just liking videos. No experience needed. Message us on Telegram."</string>
+    <string name="guide_job_tips">• High pay for very easy work is too good to be true.\n• Real employers don\'t recruit through random texts.\n• They later ask you to "invest" or pay a fee first.</string>
+
+    <string name="guide_loan_title">Instant loan offer</string>
+    <string name="guide_loan_example">"Loan APPROVED! Get P20,000 cash today, no requirements. Reply YES and send a processing fee to claim."</string>
+    <string name="guide_loan_tips">• You can\'t be "approved" for a loan you never applied for.\n• Legit lenders don\'t ask for fees before releasing a loan.\n• Check if the lender is registered with the SEC.</string>
+
+    <string name="guide_prize_title">Prize or raffle claim</string>
+    <string name="guide_prize_example">"Congrats! Your number won P50,000 in our anniversary raffle. Claim now at bit.ly/claim-prize."</string>
+    <string name="guide_prize_tips">• You can\'t win a raffle you never joined.\n• Real promos don\'t ask you to pay or share your OTP to claim.\n• Short links (bit.ly, cutt.ly) hide where they really go.</string>
+
+    <string name="guide_otp_title">OTP or PIN request</string>
+    <string name="guide_otp_example">"BDO Security: Suspicious login detected. Reply with the 6-digit code we sent to keep your account active."</string>
+    <string name="guide_otp_tips">• An OTP is only for you. No real company will ever ask for it.\n• Anyone with your OTP can take over your account or move your money.\n• If you shared it, call your bank\'s official hotline right away.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_sensitivity">Sensitivity</string>
+    <string name="sens_low">Low</string>
+    <string name="sens_normal">Normal</string>
+    <string name="sens_high">High</string>
+    <string name="sens_low_desc">Fewer warnings. Only clear scams are flagged.</string>
+    <string name="sens_normal_desc">Balanced. Recommended for most people.</string>
+    <string name="sens_high_desc">More warnings. Anything a bit suspicious is flagged.</string>
+    <string name="settings_trusted">Trusted contacts</string>
+    <string name="settings_trusted_desc">Messages from these senders are never flagged.</string>
+    <string name="settings_trusted_add">Add contact</string>
+    <string name="settings_trusted_hint">Name or number</string>
+    <string name="settings_trusted_empty">No trusted contacts yet.</string>
+    <string name="settings_trusted_remove">Remove %1$s</string>
+    <string name="settings_update">Update protection when online</string>
+    <string name="settings_update_desc">Downloads the latest list of scam links. Your messages are never uploaded.</string>
+    <string name="settings_update_placeholder">Online updates are added in a later version.</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_body">Everything is checked on your phone, even in airplane mode. Your messages never leave your phone.</string>
+    <string name="settings_version">Version %1$s</string>
 </resources>
