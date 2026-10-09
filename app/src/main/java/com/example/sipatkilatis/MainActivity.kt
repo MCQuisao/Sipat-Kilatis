@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.app.NotificationManagerCompat
 import com.example.sipatkilatis.capture.MessageNotificationListener
 import com.example.sipatkilatis.capture.ScamAlerts
@@ -25,7 +27,8 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         if (savedInstanceState == null) handleShareIntent(intent)   // not again after rotation / language change
         setContent {
-            SipatKilatisTheme {
+            val appearance by vm.appearance.collectAsStateWithLifecycle()
+            SipatKilatisTheme(appearance) {
                 AppNavHost(vm)
             }
         }

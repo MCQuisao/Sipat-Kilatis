@@ -12,15 +12,14 @@
             <action android:name="android.provider.Telephony.SMS_DELIVER" />
         </intent>
     </queries>
-    <!-- Fully offline: ONNX Runtime's library manifest adds INTERNET and ACCESS_NETWORK_STATE, which no code in
-         this app uses. Removing them means Android itself blocks all network access, so message content provably
-         cannot leave the phone. (If the optional online blocklist update is built in phase 7, add them back there.) -->
+    <!-- Fully offline: ONNX Runtime's library manifest adds INTERNET, which no code in this app uses. Removing it
+         means Android itself blocks all network access, so message content provably cannot leave the phone. -->
     <uses-permission
         android:name="android.permission.INTERNET"
         tools:node="remove" />
-    <uses-permission
-        android:name="android.permission.ACCESS_NETWORK_STATE"
-        tools:node="remove" />
+    <!-- Read-only: lets Home say "Offline. Still protecting you." It can see whether the phone is online but cannot
+         send or receive anything. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".SipatApp"

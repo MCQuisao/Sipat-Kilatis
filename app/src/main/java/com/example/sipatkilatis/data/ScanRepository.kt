@@ -26,6 +26,9 @@ interface ScanRepository {
     suspend fun setFeedback(id: Long, feedback: Feedback)
     suspend fun withFeedback(): List<ScanRecord>
     suspend fun clearHistory()
+    suspend fun deleteScan(id: Long)
+    /** Put a deleted scan back (Undo). */
+    suspend fun restoreScan(record: ScanRecord)
     suspend fun addTrustedContact(sender: String)
     suspend fun removeTrustedContact(sender: String)
     /** Read straight from the database (not the StateFlow, which may not have loaded yet at cold start). */
@@ -60,6 +63,14 @@ class RoomScanRepository(db: AppDatabase, scope: CoroutineScope) : ScanRepositor
     override suspend fun withFeedback(): List<ScanRecord> = dao.withFeedback().map { it.toRecord() }
 
     override suspend fun clearHistory() = dao.clear()
+
+    override suspend fun deleteScan(id: Long) = dao.delete(id)
+
+    override suspend fun restoreScan(record: ScanRecord) {
+        val result = record.result ?: return
+        dao.restore(result.toEntity(record.source).copy(id = record.id, timestamp = record.timestamp,
+            userFeedback = record.feedback.name))
+    }
 
     override suspend fun addTrustedContact(sender: String) {
         val s = sender.trim()

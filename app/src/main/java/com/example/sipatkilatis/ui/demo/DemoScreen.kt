@@ -32,10 +32,9 @@ import com.example.sipatkilatis.detection.ExplanationSafety
 import com.example.sipatkilatis.graph
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.ui.components.AppTopBar
-import com.example.sipatkilatis.ui.components.SectionCard
-import com.example.sipatkilatis.ui.components.VerdictChip
-import com.example.sipatkilatis.ui.theme.SafeGreen
-import com.example.sipatkilatis.ui.theme.ScamRed
+import com.example.sipatkilatis.ui.components.MessageBlock
+import com.example.sipatkilatis.ui.components.StatusBadge
+import com.example.sipatkilatis.ui.theme.Sipat
 
 private data class DemoRow(val msg: DemoMessage, val result: ScanResult, val ms: Long)
 
@@ -93,7 +92,7 @@ fun DemoScreen(onBack: () -> Unit) {
         }
     }
 
-    Scaffold(topBar = { AppTopBar("Demo mode", onBack) }) { padding ->
+    Scaffold(containerColor = Sipat.colors.paper, topBar = { AppTopBar("Demo mode", onBack) }) { padding ->
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(16.dp),
@@ -102,7 +101,7 @@ fun DemoScreen(onBack: () -> Unit) {
             item {
                 val ok = rows.count { it.result.verdict == it.msg.expected }
                 val avg = if (rows.isEmpty()) 0 else rows.map { it.ms }.average().toLong()
-                SectionCard {
+                MessageBlock {
                     if (rows.size < DEMO_MESSAGES.size) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(Modifier.padding(end = 12.dp))
@@ -117,24 +116,25 @@ fun DemoScreen(onBack: () -> Unit) {
             }
             aiStatus?.let { status ->
                 item {
-                    SectionCard(title = "On-device AI explanation") {
+                    MessageBlock {
+                        Text("AI explanation on this phone", style = MaterialTheme.typography.titleMedium)
                         Text(status, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
             itemsIndexed(rows) { i, row ->
                 val match = row.result.verdict == row.msg.expected
-                SectionCard {
+                MessageBlock {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("${i + 1}. ${row.msg.label}", style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.weight(1f))
-                        Text(if (match) "✓" else "≠", color = if (match) SafeGreen else ScamRed,
+                        Text(if (match) "✓" else "≠", color = Sipat.colors.ink,
                             fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
                     }
                     Text(row.msg.text, style = MaterialTheme.typography.bodyMedium, maxLines = 2,
                         overflow = TextOverflow.Ellipsis)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        VerdictChip(row.result.verdict)
+                        StatusBadge(row.result.verdict)
                         Spacer(Modifier.width(12.dp))
                         Text("score %.2f · %d ms".format(row.result.score, row.ms), style = MaterialTheme.typography.bodyMedium)
                         if (!match) {

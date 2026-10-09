@@ -10,12 +10,12 @@
 
     <!-- Verdicts -->
     <string name="verdict_safe">Ligtas</string>
-    <string name="verdict_suspicious">Kahina-hinala</string>
+    <string name="verdict_suspicious">Mag-ingat</string>
     <string name="verdict_scam">Scam</string>
 
     <!-- Onboarding -->
-    <string name="onb_title_1">Mahuli ang scam bago ka mabiktima</string>
-    <string name="onb_body_1">Sinusuri ng Sipat Kilatis ang mga text at chat mo para sa scam: pekeng GCash o bank alert, bayad sa parcel, pekeng premyo, at iba pa. Gumagana ito sa English, Filipino, at Taglish.</string>
+    <string name="onb_title_1">Suriin muna ang mensahe bago magtiwala</string>
+    <string name="onb_body_1">Tinitingnang mabuti ng Sipat Kilatis ang mga text at chat at sinasabi sa iyo kapag mukhang scam: pekeng GCash o bank alert, bayad sa parcel, pekeng premyo, at iba pa. Sa English, Filipino, at Taglish.</string>
     <string name="onb_title_2">Hindi umaalis sa phone mo ang mga mensahe mo</string>
     <string name="onb_body_2">Sa phone mo mismo ginagawa ang bawat pagsusuri, kahit naka-airplane mode. Walang mensaheng ina-upload, sine-save online, o ibinabahagi kaninuman.</string>
     <string name="onb_title_3">Piliin ang wika</string>
@@ -45,10 +45,10 @@
     <!-- Check a message -->
     <string name="check_title">Suriin ang mensahe</string>
     <string name="check_label">I-paste dito ang mensahe</string>
-    <string name="check_hint">hal. Naka-lock ang account mo. I-verify na sa…</string>
-    <string name="check_paste">I-paste</string>
+    <string name="check_hint">I-paste o i-type dito ang mensahe</string>
+    <string name="check_paste">I-paste mula sa clipboard</string>
     <string name="check_clear">Burahin</string>
-    <string name="check_scan">Suriin</string>
+    <string name="check_scan">Suriin ang mensahe</string>
     <string name="check_scanning">Sinusuri sa phone mo…</string>
     <string name="check_privacy">Sinuri sa phone mo. Walang ina-upload.</string>
     <string name="check_share_tip">Tip: sa kahit anong messaging app, pindutin nang matagal ang mensahe → Share → Sipat Kilatis.</string>
@@ -61,18 +61,18 @@
     <string name="result_risk">Panganib: %1$d%%</string>
     <string name="result_parts">Model %1$d%% · Link %2$d%% · Salita %3$d%%</string>
     <string name="result_message">Ang mensahe</string>
-    <string name="result_highlight_note">Naka-highlight ang mga delikadong bahagi.</string>
-    <string name="result_why">Bakit?</string>
+    <string name="result_highlight_note">Pindutin ang may marka para makita kung bakit ito delikado.</string>
+    <string name="result_why">Bakit namin ito nasabi</string>
     <string name="result_explanation_intro">Nakita namin ang mga babalang ito:</string>
     <string name="result_explanation_safe">Wala kaming nakitang karaniwang senyales ng scam. Gayunpaman, huwag ibigay kaninuman ang OTP, PIN, o password mo.</string>
     <string name="result_todo">Ano ang dapat gawin</string>
     <string name="result_preview_note">Demo na resulta: hindi pa nakakonekta ang buong detection engine.</string>
-    <string name="result_scan_another">Sumuri ng ibang mensahe</string>
-    <string name="todo_scam_1">Huwag pindutin ang kahit anong link sa mensahe.</string>
-    <string name="todo_scam_2">Huwag kailanman ibigay ang OTP, PIN, o password mo.</string>
+    <string name="result_scan_another">Sumuri ng iba</string>
+    <string name="todo_scam_1">Huwag pindutin ang link</string>
+    <string name="todo_scam_2">Huwag ibigay ang kahit anong code o PIN</string>
     <string name="todo_scam_3">Huwag magpadala ng pera o load.</string>
-    <string name="todo_scam_4">I-block ang nagpadala at burahin ang mensahe.</string>
-    <string name="todo_scam_5">I-report ang scam sa CICC hotline 1326.</string>
+    <string name="todo_scam_4">Burahin ang mensahe</string>
+    <string name="todo_scam_5">I-report sa CICC hotline 1326</string>
     <string name="todo_suspicious_1">Huwag pindutin ang link hangga\'t hindi ka sigurado.</string>
     <string name="todo_suspicious_2">Kontakin ang kumpanya sa opisyal nilang app o hotline, hindi sa numerong nasa mensahe.</string>
     <string name="todo_suspicious_3">Huwag ibigay ang OTP o PIN mo.</string>
@@ -82,7 +82,7 @@
     <!-- History -->
     <string name="history_title">Kasaysayan</string>
     <string name="history_all">Lahat</string>
-    <string name="history_empty">Wala pang nasuri dito.</string>
+    <string name="history_empty">Wala pang nasusuring mensahe.</string>
     <string name="source_sms">SMS</string>
     <string name="source_notification">Chat app</string>
     <string name="source_manual">Ikaw ang nagsuri</string>
@@ -90,7 +90,7 @@
     <!-- Scam guide -->
     <string name="guide_title">Gabay sa scam</string>
     <string name="guide_intro">Mga karaniwang scam sa Pilipinas at kung paano sila makikilala.</string>
-    <string name="guide_example">Halimbawa</string>
+    <string name="guide_example">Ganito ang itsura</string>
     <string name="guide_spot">Paano makikilala</string>
 
     <string name="guide_ewallet_title">Pekeng alert mula sa e-wallet o bangko</string>
@@ -171,10 +171,10 @@
 
     <!-- AI explanations (local LLM, phase 6) -->
     <string name="result_ai_generating">Gumagawa ng paliwanag sa phone mo…</string>
-    <string name="result_ai_written">Isinulat ng AI sa phone mo, kahit offline</string>
+    <string name="result_ai_written">Isinulat sa phone mo</string>
     <string name="result_signs">Mga babalang nakita</string>
     <string name="settings_ai">Paliwanag ng AI</string>
-    <string name="settings_ai_desc">Isang maliit na AI sa phone mo ang nagpapaliwanag ng kahina-hinala at scam na mensahe sa simpleng salita. Gumagana kahit offline.</string>
+    <string name="settings_ai_desc">Isang maliit na AI sa phone mo ang nagpapaliwanag ng kahina-hinala at scam na mensahe sa simpleng salita. Gumagana kahit walang internet.</string>
     <string name="settings_ai_installed">Naka-install ang AI model (%1$d MB)</string>
     <string name="settings_ai_missing">Hindi naka-install ang AI model. Simpleng paliwanag ang gagamitin.</string>
     <!-- Phase 7: database, feedback, export -->
@@ -195,4 +195,57 @@
     <string name="settings_clear_confirm_title">Burahin ang buong kasaysayan?</string>
     <string name="settings_clear_confirm_body">Buburahin nito ang lahat ng nasuring mensahe at report sa phone na ito. Mananatili ang mga pinagkakatiwalaang contact.</string>
     <string name="settings_clear_done">Nabura na ang kasaysayan</string>
+    <string name="verdict_word_safe">Mukhang ligtas</string>
+    <string name="verdict_word_suspicious">Mag-ingat</string>
+    <string name="verdict_word_scam">Posibleng scam</string>
+    <string name="score_of">%1$d sa 100</string>
+    <string name="verdict_a11y">%1$s, %2$d sa 100</string>
+    <string name="risk_a11y">Panganib: %1$d sa 100</string>
+    <string name="onb_offline_1">Gumagana kahit walang internet</string>
+    <string name="onb_offline_2">Walang ina-upload</string>
+    <string name="onb_back">Bumalik</string>
+    <string name="home_online">Protektado sa phone na ito</string>
+    <string name="home_offline">Offline. Protektado ka pa rin.</string>
+    <string name="home_protection_attention">May kailangang ayusin sa proteksyon</string>
+    <string name="home_fix">Ayusin</string>
+    <string name="home_empty">Wala pang nasusuri. Mag-paste ng kahina-hinalang mensahe para subukan.</string>
+    <string name="check_sender">Nagpadala (opsyonal)</string>
+    <string name="result_copy">Kopyahin ang mensahe</string>
+    <string name="result_copied">Nakopya ang mensahe</string>
+    <string name="result_checked_in">Nasuri sa loob ng %1$s segundo, offline</string>
+    <string name="highlight_why_title">Bakit ito delikado?</string>
+    <string name="lookalike_hint">Ang mga nakakahon ay numero o simbolo na ginawang mukhang letra, isang karaniwang daya sa pekeng link.</string>
+    <string name="confirm_safe_title">Markahang ligtas ang mensaheng ito?</string>
+    <string name="confirm_safe_body">Ise-save ito bilang ligtas. Kung may nagpadala, idadagdag siya sa mga pinagkakatiwalaang contact mo at hindi na mafa-flag ang mga mensahe niya. Puwede mo siyang alisin sa Settings.</string>
+    <string name="confirm_report_title">I-report ito bilang scam?</string>
+    <string name="confirm_report_body">Sa phone na ito lang naka-save ang report. Mamaya, puwede mong i-export ang mga report mo, nakatago ang mga numero at pangalan, at ikaw mismo ang magbabahagi.</string>
+    <string name="history_unknown_sender">Hindi kilalang nagpadala</string>
+    <string name="history_deleted">Nabura ang mensahe</string>
+    <string name="history_empty_filter">Wala pang laman ang listahang ito.</string>
+    <string name="undo">Ibalik</string>
+    <string name="guide_todo">Ano ang gagawin</string>
+    <string name="guide_ewallet_todo">Buksan mismo ang opisyal na GCash, Maya, o bank app para tingnan ang account mo. Huwag gamitin ang link.</string>
+    <string name="guide_delivery_todo">Tingnan ang order sa mismong Shopee o Lazada. Huwag magbayad gamit ang link sa text.</string>
+    <string name="guide_job_todo">Huwag pansinin. Hindi ka dapat magbayad para makakuha ng trabaho, at huwag lumipat sa Telegram.</string>
+    <string name="guide_loan_todo">Huwag pansinin. Mangutang lang sa lender na ikaw mismo ang nag-check, at huwag magbayad ng fee bago makuha ang loan.</string>
+    <string name="guide_prize_todo">Burahin. Hindi ka pagbabayarin o hihingan ng code ng totoong promo.</string>
+    <string name="guide_otp_todo">Huwag ibigay ang code. Kung naibigay mo na, tawagan agad ang opisyal na hotline ng bangko mo.</string>
+    <string name="settings_appearance">Itsura</string>
+    <string name="appearance_light">Maliwanag</string>
+    <string name="appearance_dark">Madilim</string>
+    <string name="appearance_system">Sundin ang phone</string>
+    <string name="settings_protection">Proteksyon</string>
+    <string name="settings_about">Tungkol sa app</string>
+    <string name="settings_on">Naka-on</string>
+    <string name="settings_off">Naka-off</string>
+    <!-- UI refresh: floating nav bar, verdict gauge, protection card -->
+    <string name="nav_home">Home</string>
+    <string name="nav_history">Kasaysayan</string>
+    <string name="nav_guide">Gabay</string>
+    <string name="nav_settings">Settings</string>
+    <string name="gauge_of_100">sa 100</string>
+    <string name="verdict_sub_safe">Walang nakitang karaniwang senyales ng scam.</string>
+    <string name="verdict_sub_suspicious">May ilang senyales ng scam. Suriin muna bago kumilos.</string>
+    <string name="verdict_sub_scam">Malakas na senyales ng scam. Huwag sumagot o pumindot ng link.</string>
+    <string name="home_auto_check">Suriin ang mga bagong mensahe</string>
 </resources>

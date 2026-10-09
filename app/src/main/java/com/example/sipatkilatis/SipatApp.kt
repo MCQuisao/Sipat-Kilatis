@@ -30,6 +30,13 @@ class AppGraph(context: Context) {
 
     val protectionOn = MutableStateFlow(prefs.protectionOn)
     val sensitivity = MutableStateFlow(prefs.sensitivity)
+    val appearance = MutableStateFlow(prefs.appearance)
+
+    /**
+     * Text shared into the app that the Check screen has not shown yet. Lives here (not in the ViewModel) so it
+     * survives the screen being destroyed right after the share arrives (e.g. the system clearing the task).
+     */
+    val pendingShare = MutableStateFlow<String?>(null)
 
     /** Real on-device engine; reads the current sensitivity and trusted contacts on every scan. */
     val detector = OnDeviceScamDetector(context, { sensitivity.value }, { repo.trustedNow() })

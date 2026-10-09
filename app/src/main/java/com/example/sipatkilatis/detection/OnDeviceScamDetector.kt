@@ -74,7 +74,23 @@ class OnDeviceScamDetector(
             // A SAFE verdict shows no warning list or highlights: minor signs alone are not worth alarming people
             flags = if (verdict == Verdict.SAFE) emptyList() else flags,
             highlights = if (verdict == Verdict.SAFE) emptyList() else RiskScorer.mergeRanges(r.ranges + u.result.ranges),
+            durationMs = totalMs,
         )
+    }
+
+    /**
+     * For the UI: which parts of [text] to highlight, why (the warning each belongs to), and which characters are
+     * lookalikes ("0" in "g0ogle"). Rules + URL checks only (fast, no ML), recomputed from the text so it also
+     * works for saved history items.
+     */
+    fun marks(text: String): MessageMarks {
+        val input = Preprocessor.process(text)
+        val spans = rules.check(input).spans + urls.check(input).result.spans
+        // A lookalike is a digit / symbol in the original that the preprocessor read as a letter
+        val lookalikes = text.indices.filter { i ->
+            text[i] in "01345@$7" && input.matchText[i].isLetter()
+        }.toSet()
+        return MessageMarks(spans.sortedBy { it.range.first }, lookalikes)
     }
 
     /** Match by name (case-insensitive) or by the last 10 digits of a phone number. */

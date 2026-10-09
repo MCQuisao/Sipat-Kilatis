@@ -53,11 +53,16 @@ class OfflineUrlChecker(private val blocklist: Set<String>) : UrlChecker {
         var blocklisted = false
         val flags = linkedMapOf<String, Flag>()   // one flag per kind, in order found
         val ranges = mutableListOf<IntRange>()
+        val spans = mutableListOf<RiskSpan>()
 
         for (url in input.urls) {
             val host = hostOf(url.value)
             var s = 0f
-            fun hit(value: Float, flag: Flag) { s = maxOf(s, value); flags.putIfAbsent(flag.id, flag) }
+            var worst: Flag? = null   // the strongest reason for this link, shown when it is tapped
+            fun hit(value: Float, flag: Flag) {
+                if (value > s || worst == null) worst = flag
+                s = maxOf(s, value); flags.putIfAbsent(flag.id, flag)
+            }
 
             if (inList(host, blocklist)) {
                 blocklisted = true
@@ -80,13 +85,16 @@ class OfflineUrlChecker(private val blocklist: Set<String>) : UrlChecker {
                 hit(0.4f, Flag("url_short", "Uses a short link that hides where it really goes ($host)",
                     "Gumagamit ng maikling link na nagtatago kung saan talaga ito papunta ($host)"))
             }
-            if (s > 0f) ranges += url.range
+            if (s > 0f) {
+                ranges += url.range
+                worst?.let { spans += RiskSpan(url.range, it, it.id in STRONG_FLAGS) }
+            }
             score = maxOf(score, s)
         }
         // Every link goes to an official brand site or a known meeting service -> the risk scorer may cap the score
         val allOfficial = input.urls.isNotEmpty() && !blocklisted &&
             input.urls.all { inList(hostOf(it.value), official + trustedMeetingLinks) }
-        return UrlCheckResult(CheckResult(score, flags.values.toList(), ranges), blocklisted, allOfficial)
+        return UrlCheckResult(CheckResult(score, flags.values.toList(), ranges, spans), blocklisted, allOfficial)
     }
 
     /** "https://www.Gcash-Verify.xyz/login?x=1" -> "gcash-verify.xyz" */

@@ -156,8 +156,11 @@ Setup: `cd ml; .\setup_venv.ps1` (Windows) or `cd ml && ./setup_venv.sh` (macOS/
 
 - **Privacy first**: message content never leaves the device. No analytics on message text, no cloud APIs.
 - **Offline always**: every feature works in airplane mode. Network is optional, only for updates.
-  The manifest REMOVES `INTERNET` and `ACCESS_NETWORK_STATE` (ONNX Runtime's library adds them; no code uses
-  them), so Android blocks all network access. Add them back only for a deliberate online feature.
+  The manifest REMOVES `INTERNET` (ONNX Runtime's library adds it), so Android blocks all network access.
+  `ACCESS_NETWORK_STATE` is kept (read-only) only for Home's "online / offline" line. Add INTERNET back only
+  for a deliberate online feature.
+- **UI**: see `docs/DESIGN.md`. Neutral colors except verdicts (Safe green / Careful amber / Scam red, always with
+  icon + words too). Inter font bundled. Floating nav bar on Home / History / Scam guide / Settings.
 - Keep code **simple and readable** (it's a hackathon). Prefer small, obvious classes over clever abstractions.
 - Add short comments explaining intent.
 - Weights and thresholds above are the source of truth — change them here first if they change.

@@ -6,6 +6,9 @@ enum class Verdict { SAFE, SUSPICIOUS, SCAM }
 /** How strict the detector is. Shifts the SUSPICIOUS / SCAM thresholds (wired up in phase 4/7). */
 enum class Sensitivity { LOW, NORMAL, HIGH }
 
+/** Light / dark theme choice (Settings → Appearance). */
+enum class Appearance { SYSTEM, LIGHT, DARK }
+
 /** Where a message came from. */
 enum class MessageSource { SMS, NOTIFICATION, MANUAL }
 
@@ -28,6 +31,7 @@ data class ScanResult(
     val flags: List<Flag>,
     val highlights: List<IntRange>,   // character ranges in [text] to highlight as risky
     val isPreview: Boolean = false,   // true while the real detection engine is not connected yet
+    val durationMs: Long = 0,         // how long detection took (fresh scans only; 0 for saved history items)
 )
 
 /** The user's correction of a verdict. */

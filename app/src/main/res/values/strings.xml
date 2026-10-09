@@ -10,12 +10,12 @@
 
     <!-- Verdicts -->
     <string name="verdict_safe">Safe</string>
-    <string name="verdict_suspicious">Suspicious</string>
+    <string name="verdict_suspicious">Careful</string>
     <string name="verdict_scam">Scam</string>
 
     <!-- Onboarding -->
-    <string name="onb_title_1">Spot scams before they get you</string>
-    <string name="onb_body_1">Sipat Kilatis checks your texts and chat messages for scams: fake GCash or bank alerts, parcel fees, prize claims, and more. It works in English, Filipino, and Taglish.</string>
+    <string name="onb_title_1">Check any message before you trust it</string>
+    <string name="onb_body_1">Sipat Kilatis looks closely at texts and chat messages and tells you when one looks like a scam: fake GCash or bank alerts, parcel fees, prize claims, and more. In English, Filipino, and Taglish.</string>
     <string name="onb_title_2">Your messages never leave your phone</string>
     <string name="onb_body_2">Every check happens on your phone, even in airplane mode. No message is uploaded, stored online, or shared with anyone.</string>
     <string name="onb_title_3">Choose your language</string>
@@ -45,10 +45,10 @@
     <!-- Check a message -->
     <string name="check_title">Check a message</string>
     <string name="check_label">Paste the message here</string>
-    <string name="check_hint">e.g. Your account is locked. Verify now at…</string>
-    <string name="check_paste">Paste</string>
+    <string name="check_hint">Paste or type the message here</string>
+    <string name="check_paste">Paste from clipboard</string>
     <string name="check_clear">Clear</string>
-    <string name="check_scan">Scan message</string>
+    <string name="check_scan">Check message</string>
     <string name="check_scanning">Checking on your phone…</string>
     <string name="check_privacy">Checked on your phone. Nothing is uploaded.</string>
     <string name="check_share_tip">Tip: in any messaging app, long-press a message → Share → Sipat Kilatis.</string>
@@ -61,18 +61,18 @@
     <string name="result_risk">Risk score: %1$d%%</string>
     <string name="result_parts">Model %1$d%% · Links %2$d%% · Phrases %3$d%%</string>
     <string name="result_message">The message</string>
-    <string name="result_highlight_note">Risky parts are highlighted.</string>
-    <string name="result_why">Why?</string>
+    <string name="result_highlight_note">Tap a marked part to see why it is risky.</string>
+    <string name="result_why">Why we think so</string>
     <string name="result_explanation_intro">We found these warning signs:</string>
     <string name="result_explanation_safe">We didn\'t find common scam signs. Still, never share your OTP, PIN, or password with anyone.</string>
     <string name="result_todo">What to do now</string>
     <string name="result_preview_note">Demo result: the full detection engine is not connected yet.</string>
-    <string name="result_scan_another">Check another message</string>
-    <string name="todo_scam_1">Don\'t tap any link in the message.</string>
-    <string name="todo_scam_2">Never share your OTP, PIN, or password.</string>
+    <string name="result_scan_another">Check another</string>
+    <string name="todo_scam_1">Do not tap the link</string>
+    <string name="todo_scam_2">Do not share any code or PIN</string>
     <string name="todo_scam_3">Don\'t send money or load.</string>
-    <string name="todo_scam_4">Block the sender and delete the message.</string>
-    <string name="todo_scam_5">Report scams to the CICC hotline 1326.</string>
+    <string name="todo_scam_4">Delete the message</string>
+    <string name="todo_scam_5">Report it to the CICC hotline 1326</string>
     <string name="todo_suspicious_1">Don\'t tap any link until you\'re sure.</string>
     <string name="todo_suspicious_2">Contact the company through its official app or hotline, not the number in the message.</string>
     <string name="todo_suspicious_3">Never share your OTP or PIN.</string>
@@ -82,7 +82,7 @@
     <!-- History -->
     <string name="history_title">History</string>
     <string name="history_all">All</string>
-    <string name="history_empty">No scans here yet.</string>
+    <string name="history_empty">No messages checked yet.</string>
     <string name="source_sms">SMS</string>
     <string name="source_notification">Chat app</string>
     <string name="source_manual">Checked by you</string>
@@ -90,7 +90,7 @@
     <!-- Scam guide -->
     <string name="guide_title">Scam guide</string>
     <string name="guide_intro">Common scams in the Philippines and how to spot them.</string>
-    <string name="guide_example">Example</string>
+    <string name="guide_example">What it looks like</string>
     <string name="guide_spot">How to spot it</string>
 
     <string name="guide_ewallet_title">Fake e-wallet or bank alert</string>
@@ -171,10 +171,10 @@
 
     <!-- AI explanations (local LLM, phase 6) -->
     <string name="result_ai_generating">Generating explanation on your phone…</string>
-    <string name="result_ai_written">Written by the AI on your phone, offline</string>
+    <string name="result_ai_written">Written on your phone</string>
     <string name="result_signs">Warning signs found</string>
     <string name="settings_ai">AI explanations</string>
-    <string name="settings_ai_desc">A small AI on your phone explains suspicious and scam messages in plain words. Works offline.</string>
+    <string name="settings_ai_desc">A small AI on your phone explains suspicious and scam messages in plain words. Works with no internet.</string>
     <string name="settings_ai_installed">AI model installed (%1$d MB)</string>
     <string name="settings_ai_missing">AI model not installed. Simple explanations are used instead.</string>
     <!-- Phase 7: database, feedback, export -->
@@ -195,4 +195,57 @@
     <string name="settings_clear_confirm_title">Clear all history?</string>
     <string name="settings_clear_confirm_body">This deletes all scanned messages and reports from this phone. Trusted contacts are kept.</string>
     <string name="settings_clear_done">History cleared</string>
+    <string name="verdict_word_safe">Looks safe</string>
+    <string name="verdict_word_suspicious">Be careful</string>
+    <string name="verdict_word_scam">Likely a scam</string>
+    <string name="score_of">%1$d of 100</string>
+    <string name="verdict_a11y">%1$s, %2$d out of 100</string>
+    <string name="risk_a11y">Risk score %1$d out of 100</string>
+    <string name="onb_offline_1">Works with no internet</string>
+    <string name="onb_offline_2">Nothing is uploaded</string>
+    <string name="onb_back">Back</string>
+    <string name="home_online">Protected on this phone</string>
+    <string name="home_offline">Offline. Still protecting you.</string>
+    <string name="home_protection_attention">Protection needs attention</string>
+    <string name="home_fix">Fix</string>
+    <string name="home_empty">Nothing checked yet. Paste a suspicious message to try it.</string>
+    <string name="check_sender">Sender (optional)</string>
+    <string name="result_copy">Copy message</string>
+    <string name="result_copied">Message copied</string>
+    <string name="result_checked_in">Checked in %1$s s, offline</string>
+    <string name="highlight_why_title">Why is this risky?</string>
+    <string name="lookalike_hint">Boxed characters are numbers or symbols made to look like letters, a common trick in fake links.</string>
+    <string name="confirm_safe_title">Mark this message as safe?</string>
+    <string name="confirm_safe_body">It will be saved as safe. If it has a sender, they are added to your trusted contacts and their messages won\'t be flagged again. You can remove them in Settings.</string>
+    <string name="confirm_report_title">Report this as a scam?</string>
+    <string name="confirm_report_body">The report is saved on this phone only. Later you can export your reports, with numbers and names hidden, and share them yourself.</string>
+    <string name="history_unknown_sender">Unknown sender</string>
+    <string name="history_deleted">Message deleted</string>
+    <string name="history_empty_filter">Nothing in this list yet.</string>
+    <string name="undo">Undo</string>
+    <string name="guide_todo">What to do</string>
+    <string name="guide_ewallet_todo">Open the official GCash, Maya, or bank app yourself to check your account. Never use the link.</string>
+    <string name="guide_delivery_todo">Check the order inside Shopee or Lazada. Don\'t pay through a link in a text.</string>
+    <string name="guide_job_todo">Ignore it. Never pay to get a job, and don\'t move the chat to Telegram.</string>
+    <string name="guide_loan_todo">Ignore it. Only borrow from lenders you looked up yourself, and never pay a fee first.</string>
+    <string name="guide_prize_todo">Delete it. Real promos never ask you to pay or to send a code.</string>
+    <string name="guide_otp_todo">Never send the code. If you already did, call your bank\'s official hotline right away.</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_system">Match system</string>
+    <string name="settings_protection">Protection</string>
+    <string name="settings_about">About</string>
+    <string name="settings_on">On</string>
+    <string name="settings_off">Off</string>
+    <!-- UI refresh: floating nav bar, verdict gauge, protection card -->
+    <string name="nav_home">Home</string>
+    <string name="nav_history">History</string>
+    <string name="nav_guide">Scam guide</string>
+    <string name="nav_settings">Settings</string>
+    <string name="gauge_of_100">of 100</string>
+    <string name="verdict_sub_safe">We didn\'t find common scam signs.</string>
+    <string name="verdict_sub_suspicious">Some signs of a scam. Check before you act.</string>
+    <string name="verdict_sub_scam">Strong signs of a scam. Don\'t reply or tap links.</string>
+    <string name="home_auto_check">Check new messages</string>
 </resources>

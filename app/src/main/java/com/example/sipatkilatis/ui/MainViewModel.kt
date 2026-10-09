@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.sipatkilatis.data.ReportExporter
 import com.example.sipatkilatis.detection.ExplanationSafety
 import com.example.sipatkilatis.detection.LlmExplainer
+import com.example.sipatkilatis.detection.MessageMarks
 import com.example.sipatkilatis.graph
+import com.example.sipatkilatis.model.Appearance
 import com.example.sipatkilatis.model.Feedback
 import com.example.sipatkilatis.model.MessageSource
 import com.example.sipatkilatis.model.ScanRecord
@@ -41,14 +43,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val trustedContacts = repo.trustedContacts
     val protectionOn = graph.protectionOn
     val sensitivity = graph.sensitivity
+    val appearance = graph.appearance
+
+    fun setAppearance(value: Appearance) {
+        prefs.appearance = value
+        appearance.value = value
+    }
     val onboardingDone = MutableStateFlow(prefs.onboardingDone)
 
-    /** Text in the "Check a message" box (also filled by the share sheet). */
-    val draftText = MutableStateFlow("")
+    /** Text in the "Check a message" box (also filled by the share sheet; a share not shown yet wins). */
+    val draftText = MutableStateFlow(graph.pendingShare.value ?: "")
+    /** Optional sender typed on the Check screen (trusted contacts apply to it). */
+    val draftSender = MutableStateFlow("")
+    private var scanJob: Job? = null
 
-    /** Set when another app shares text into Sipat Kilatis; the nav host opens the Check screen. */
-    private val _pendingShare = MutableStateFlow(false)
-    val pendingShare = _pendingShare.asStateFlow()
+    /** Text shared from another app that the Check screen has not shown yet; the nav host opens Check for it. */
+    val pendingShare = graph.pendingShare.asStateFlow()
 
     /** Set when the user taps a scam alert; the nav host opens the Result screen. */
     private val _pendingResult = MutableStateFlow(false)
@@ -65,6 +75,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _lastResult = MutableStateFlow<ScanResult?>(null)
     val lastResult = _lastResult.asStateFlow()
+
+    /** Highlights (with reasons) and lookalike characters for the message on the Result screen. */
+    private val _marks = MutableStateFlow(MessageMarks(emptyList(), emptySet()))
+    val marks = _marks.asStateFlow()
 
     /** The saved row of the result on screen, kept up to date (e.g. its feedback) from the database. */
     private val _currentScanId = MutableStateFlow(-1L)
@@ -88,6 +102,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Show a result and start its explanation. */
     private fun showResult(result: ScanResult, scanId: Long) {
         _currentScanId.value = scanId
+        _marks.value = graph.detector.marks(result.text)
         _lastResult.value = result
         explain(result)
     }
@@ -160,11 +175,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onSharedText(text: String) {
         draftText.value = text
-        _pendingShare.value = true
+        graph.pendingShare.value = text
     }
 
+    /** Called by the Check screen once it is showing the shared text (not when navigation starts). */
     fun shareHandled() {
-        _pendingShare.value = false
+        graph.pendingShare.value = null
     }
 
     /** Show a saved scan (from an alert or the History list). [onOpened] runs once it is loaded. */
@@ -185,14 +201,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun scan(onDone: () -> Unit) {
         val text = draftText.value.trim()
         if (text.isEmpty() || _scanning.value) return
-        viewModelScope.launch {
+        val sender = draftSender.value.trim().ifEmpty { null }
+        scanJob = viewModelScope.launch {
             _scanning.value = true
-            val result = graph.detector.detect(text)
-            val record = repo.addScan(result, MessageSource.MANUAL)
-            showResult(result, record.id)
-            _scanning.value = false
-            onDone()
+            try {
+                val result = graph.detector.detect(text, sender)
+                val record = repo.addScan(result, MessageSource.MANUAL)
+                showResult(result, record.id)
+                onDone()
+            } finally {
+                _scanning.value = false
+            }
         }
+    }
+
+    /** Stop a scan that is still running (e.g. models still loading). */
+    fun cancelScan() {
+        scanJob?.cancel()
+        _scanning.value = false
     }
 
     // ---- Feedback on the scan shown on the Result screen (saved in the on-device database)
@@ -220,6 +246,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 else withContext(Dispatchers.IO) { ReportExporter.shareIntent(getApplication(), records) }
             onReady(intent)
         }
+    }
+
+    fun deleteScan(record: ScanRecord) {
+        viewModelScope.launch { repo.deleteScan(record.id) }
+    }
+
+    fun restoreScan(record: ScanRecord) {
+        viewModelScope.launch { repo.restoreScan(record) }
     }
 
     fun clearHistory() {

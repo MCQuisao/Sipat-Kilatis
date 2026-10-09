@@ -10,11 +10,21 @@ interface ScamDetector {
     suspend fun detect(text: String, sender: String? = null): ScanResult
 }
 
+/** One highlighted part of the message, the warning it belongs to, and whether it is a strong sign. */
+data class RiskSpan(val range: IntRange, val flag: Flag, val strong: Boolean)
+
+/** Highlights for the UI plus the positions of lookalike characters (boxed in the message). */
+data class MessageMarks(val spans: List<RiskSpan>, val lookalikes: Set<Int>)
+
+/** Flags that count as strong signs (marker highlight in the UI); the rest are weaker (underline). */
+val STRONG_FLAGS = setOf("otp", "credentials", "url_blocklist", "url_lookalike")
+
 /** Result of one check: a 0..1 score, the reasons, and which characters of the original text to highlight. */
 data class CheckResult(
     val score: Float,
     val flags: List<Flag>,
     val ranges: List<IntRange>,
+    val spans: List<RiskSpan> = emptyList(),
 )
 
 /** Weighted regex rules for scam phrases (English + Filipino). */

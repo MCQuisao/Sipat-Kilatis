@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="window_background">#FFF7F8FC</color>
+    <!-- Grayscale tokens (see docs/DESIGN.md): Paper background, Ink foreground -->
+    <color name="window_background">#FFF4F5F7</color>
+    <color name="icon_ink">#FF14161A</color>
+    <color name="icon_paper">#FFF4F5F7</color>
 </resources>

@@ -1,6 +1,7 @@
 package com.example.sipatkilatis.data
 
 import android.content.Context
+import com.example.sipatkilatis.model.Appearance
 import com.example.sipatkilatis.model.Sensitivity
 
 /** Small settings stored on the device (SharedPreferences). Nothing here is ever uploaded. */
@@ -18,6 +19,10 @@ class AppPreferences(context: Context) {
     var sensitivity: Sensitivity
         get() = Sensitivity.valueOf(prefs.getString("sensitivity", Sensitivity.NORMAL.name)!!)
         set(value) = prefs.edit().putString("sensitivity", value.name).apply()
+
+    var appearance: Appearance
+        get() = runCatching { Appearance.valueOf(prefs.getString("appearance", null)!!) }.getOrDefault(Appearance.SYSTEM)
+        set(value) = prefs.edit().putString("appearance", value.name).apply()
 
     /** Use the local LLM (if installed) to explain SUSPICIOUS / SCAM results. */
     var aiExplanations: Boolean

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="window_background">#FF121318</color>
+    <color name="window_background">#FF0F1114</color>
+    <color name="icon_ink">#FFF1F2F4</color>
+    <color name="icon_paper">#FF0F1114</color>
 </resources>
+

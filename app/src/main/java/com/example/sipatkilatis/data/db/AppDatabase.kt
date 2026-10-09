@@ -61,6 +61,12 @@ interface ScanDao {
     @Query("DELETE FROM scans")
     suspend fun clear()
 
+    @Query("DELETE FROM scans WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun restore(scan: ScanEntity)
+
     @Query("SELECT * FROM trusted_contacts ORDER BY addedAt")
     fun observeTrusted(): Flow<List<TrustedContactEntity>>
 

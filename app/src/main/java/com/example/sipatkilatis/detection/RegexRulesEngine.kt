@@ -70,6 +70,7 @@ class RegexRulesEngine : RulesEngine {
         val text = input.matchText
         val flags = mutableListOf<Flag>()
         val ranges = mutableListOf<IntRange>()
+        val spans = mutableListOf<RiskSpan>()
         var score = 0f
         for (rule in rules) {
             val matches = rule.regex.findAll(text).filter { m ->
@@ -79,7 +80,8 @@ class RegexRulesEngine : RulesEngine {
             score += rule.weight
             flags += rule.flag
             ranges += matches.map { it.range }
+            spans += matches.map { RiskSpan(it.range, rule.flag, rule.flag.id in STRONG_FLAGS) }
         }
-        return CheckResult(score.coerceAtMost(1f), flags, ranges)
+        return CheckResult(score.coerceAtMost(1f), flags, ranges, spans)
     }
 }

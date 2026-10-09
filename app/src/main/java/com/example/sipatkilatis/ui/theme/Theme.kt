@@ -1,61 +1,80 @@
-package com.example.sipatkilatis.ui.theme
+﻿package com.example.sipatkilatis.ui.theme
 
+import android.app.Activity
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import com.example.sipatkilatis.model.Verdict
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import com.example.sipatkilatis.model.Appearance
 
-private val LightColors = lightColorScheme(
-    primary = Navy,
-    onPrimary = Color.White,
-    primaryContainer = Sky,
-    onPrimaryContainer = Navy,
-    secondary = Mango,
-    onSecondary = Color(0xFF2B1D00),
-    secondaryContainer = Sky,          // selected chips / segmented buttons use brand blue, not default lavender
-    onSecondaryContainer = Navy,
-    background = Color(0xFFF7F8FC),
-    surface = Color.White,
-    surfaceVariant = Color(0xFFE9EDF5),
-    onSurface = Color(0xFF15181E),
-    onSurfaceVariant = Color(0xFF3F4652),
-)
-
-private val DarkColors = darkColorScheme(
-    primary = NavyLight,
-    onPrimary = Color(0xFF0A1F45),
-    primaryContainer = Color(0xFF233F78),
-    onPrimaryContainer = Sky,
-    secondary = Mango,
-    onSecondary = Color(0xFF2B1D00),
-)
-
-/** Brand colors only (no dynamic wallpaper colors) so verdict colors always read the same. */
-@Composable
-fun SipatKilatisTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = Typography,
-        content = content
+/**
+ * Every Material 3 role mapped to a neutral token, so no default purple / tonal color can leak in.
+ * Only "error" uses a status color (Scam red). Dynamic (wallpaper) color is never used.
+ */
+private fun scheme(t: SipatColors, dark: Boolean): ColorScheme {
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = t.ink, onPrimary = t.paper,
+        primaryContainer = t.wash, onPrimaryContainer = t.ink,
+        inversePrimary = t.paper,
+        secondary = t.ink, onSecondary = t.paper,
+        secondaryContainer = t.wash, onSecondaryContainer = t.ink,
+        tertiary = t.ink, onTertiary = t.paper,
+        tertiaryContainer = t.wash, onTertiaryContainer = t.ink,
+        background = t.paper, onBackground = t.ink,
+        surface = t.paper, onSurface = t.ink,
+        surfaceVariant = t.wash, onSurfaceVariant = t.subtle,
+        surfaceTint = Color.Transparent,
+        inverseSurface = t.ink, inverseOnSurface = t.paper,
+        error = t.scam.strong, onError = t.card,
+        errorContainer = t.scam.container, onErrorContainer = t.scam.onContainer,
+        outline = t.mute, outlineVariant = t.line,
+        scrim = t.ink.copy(alpha = 0.4f),
+        surfaceBright = t.card, surfaceDim = t.wash,
+        surfaceContainerLowest = t.card, surfaceContainerLow = t.card,
+        surfaceContainer = t.card, surfaceContainerHigh = t.card, surfaceContainerHighest = t.wash,
     )
 }
 
-/** Strong color for a verdict (chips, bars, icons). */
-fun Verdict.color(): Color = when (this) {
-    Verdict.SAFE -> SafeGreen
-    Verdict.SUSPICIOUS -> SuspiciousAmber
-    Verdict.SCAM -> ScamRed
+@Composable
+fun SipatKilatisTheme(
+    appearance: Appearance = Appearance.SYSTEM,
+    content: @Composable () -> Unit,
+) {
+    val dark = when (appearance) {
+        Appearance.LIGHT -> false
+        Appearance.DARK -> true
+        Appearance.SYSTEM -> isSystemInDarkTheme()
+    }
+    val tokens = if (dark) DarkTokens else LightTokens
+
+    // Transparent edge-to-edge system bars; their icons follow the app theme (not only the system setting)
+    val activity = LocalContext.current as? Activity
+    SideEffect {
+        (activity as? ComponentActivity)?.enableEdgeToEdge(
+            statusBarStyle = if (dark) SystemBarStyle.dark(Color.Transparent.toArgb())
+                             else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Transparent.toArgb()),
+            navigationBarStyle = if (dark) SystemBarStyle.dark(Color.Transparent.toArgb())
+                                 else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Transparent.toArgb()),
+        )
+    }
+
+    CompositionLocalProvider(LocalSipatColors provides tokens) {
+        MaterialTheme(colorScheme = scheme(tokens, dark), typography = Typography, shapes = AppShapes, content = content)
+    }
 }
 
-/** Light background tint for a verdict. */
-fun Verdict.tint(): Color = when (this) {
-    Verdict.SAFE -> SafeTint
-    Verdict.SUSPICIOUS -> SuspiciousTint
-    Verdict.SCAM -> ScamTint
+/** Shortcut: Sipat.colors.ink, Sipat.colors.status(verdict), ... */
+object Sipat {
+    val colors: SipatColors @Composable get() = LocalSipatColors.current
 }

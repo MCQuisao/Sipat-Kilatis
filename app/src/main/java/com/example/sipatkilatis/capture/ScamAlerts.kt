@@ -81,7 +81,6 @@ class ScamAlerts(private val context: Context, private val prefs: AppPreferences
 
         val notification = NotificationCompat.Builder(context, if (scam) CHANNEL_SCAM else CHANNEL_SUSPICIOUS)
             .setSmallIcon(R.drawable.ic_stat_shield)
-            .setColor(if (scam) 0xFFC0261F.toInt() else 0xFFA35A00.toInt())
             .setContentTitle(ctx.getString(if (scam) R.string.alert_scam_title else R.string.alert_suspicious_title))
             .setContentText("$from · $reason")
             .setStyle(NotificationCompat.BigTextStyle().bigText("$from\n$reason\n\n“${record.text.take(160)}”"))

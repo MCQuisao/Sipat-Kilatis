@@ -1,7 +1,9 @@
 package com.example.sipatkilatis.ui.screens
 
+import android.text.format.DateUtils
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,118 +12,198 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.outlined.Inbox
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.sipatkilatis.R
-import com.example.sipatkilatis.model.MessageSource
+import com.example.sipatkilatis.data.RoomScanRepository
 import com.example.sipatkilatis.model.ScanRecord
 import com.example.sipatkilatis.model.Verdict
-import com.example.sipatkilatis.ui.components.AppTopBar
-import com.example.sipatkilatis.ui.components.SectionCard
-import com.example.sipatkilatis.ui.components.VerdictChip
+import com.example.sipatkilatis.ui.components.EmptyState
+import com.example.sipatkilatis.ui.components.ScreenHeader
+import com.example.sipatkilatis.ui.components.StatusBadge
+import com.example.sipatkilatis.ui.components.navBarClearance
 import com.example.sipatkilatis.ui.components.verdictLabel
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
+import com.example.sipatkilatis.ui.theme.BodyL
+import com.example.sipatkilatis.ui.theme.BodyM
+import com.example.sipatkilatis.ui.theme.Label
+import com.example.sipatkilatis.ui.theme.Radius
+import com.example.sipatkilatis.ui.theme.Sipat
+import com.example.sipatkilatis.ui.theme.Space
+import com.example.sipatkilatis.ui.theme.Title
+import kotlinx.coroutines.launch
 
-/** Past scans with verdict, date, and sender, filterable by verdict. */
+/** Search + filter tabs + one card per checked message. Swipe a card to delete, with Undo. */
 @Composable
-fun HistoryScreen(history: List<ScanRecord>, onOpen: (Long) -> Unit, onBack: () -> Unit) {
+fun HistoryScreen(
+    history: List<ScanRecord>,
+    onOpen: (Long) -> Unit,
+    onDelete: (ScanRecord) -> Unit,
+    onRestore: (ScanRecord) -> Unit,
+) {
+    val c = Sipat.colors
     var filter by rememberSaveable { mutableStateOf<Verdict?>(null) }   // null = all
     var query by rememberSaveable { mutableStateOf("") }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val deletedMsg = stringResource(R.string.history_deleted)
+    val undo = stringResource(R.string.undo)
+    val clearance = navBarClearance()
     val shown = history.filter { r ->
         (filter == null || r.verdict == filter) &&
             (query.isBlank() || r.text.contains(query, ignoreCase = true) || r.sender.contains(query, ignoreCase = true))
     }
 
-    Scaffold(topBar = { AppTopBar(stringResource(R.string.history_title), onBack) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text(stringResource(R.string.history_search)) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
-            )
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                FilterChip(selected = filter == null, onClick = { filter = null },
-                    label = { Text(stringResource(R.string.history_all)) })
-                Verdict.entries.forEach { v ->
-                    FilterChip(selected = filter == v, onClick = { filter = v }, label = { Text(verdictLabel(v)) })
+    Scaffold(
+        containerColor = c.paper,
+        snackbarHost = { SnackbarHost(snackbar, Modifier.padding(bottom = clearance - Space.l)) },
+    ) { _ ->
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = Space.screen, end = Space.screen, bottom = clearance),
+            verticalArrangement = Arrangement.spacedBy(Space.m),
+        ) {
+            item { ScreenHeader(stringResource(R.string.history_title)) }
+            item { SearchField(query) { query = it } }
+            item {
+                // Filter tabs: All / Safe / Careful / Scam, each verdict with its color dot
+                Row(Modifier.fillMaxWidth().padding(bottom = Space.xs), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    FilterTab(stringResource(R.string.history_all), null, filter == null, Modifier.weight(0.8f)) { filter = null }
+                    Verdict.entries.forEach { v ->
+                        FilterTab(verdictLabel(v), v, filter == v, Modifier.weight(1f)) { filter = v }
+                    }
                 }
             }
             if (shown.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.history_empty), style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                item {
+                    EmptyState(Icons.Outlined.Inbox,
+                        stringResource(if (history.isEmpty()) R.string.history_empty else R.string.history_empty_filter))
                 }
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(shown, key = { it.id }) { HistoryItem(it, onClick = { onOpen(it.id) }) }
+                items(shown, key = { it.id }) { record ->
+                    val state = rememberSwipeToDismissBoxState()
+                    SwipeToDismissBox(
+                        state = state,
+                        onDismiss = {
+                            onDelete(record)
+                            scope.launch {
+                                if (snackbar.showSnackbar(deletedMsg, undo) == SnackbarResult.ActionPerformed) onRestore(record)
+                            }
+                        },
+                        backgroundContent = {
+                            Row(Modifier.fillMaxSize().background(c.scam.container, Radius.card).padding(horizontal = Space.xl),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
+                                Icon(Icons.Rounded.DeleteOutline, contentDescription = null, tint = c.scam.strong)
+                            }
+                        },
+                    ) { HistoryCard(record, onClick = { onOpen(record.id) }) }
                 }
             }
         }
     }
 }
 
-private val dateFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-
+/** Rounded, softly shaded search field. */
 @Composable
-private fun HistoryItem(record: ScanRecord, onClick: () -> Unit) {
-    SectionCard(modifier = Modifier.clickable(onClick = onClick)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(record.sender, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f),
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.width(8.dp))
-            VerdictChip(record.verdict)
+private fun SearchField(query: String, onChange: (String) -> Unit) {
+    val c = Sipat.colors
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 52.dp).background(c.wash, Radius.input).padding(start = Space.l, end = Space.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.Search, contentDescription = null, tint = c.subtle, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(Space.m))
+        Box(Modifier.weight(1f)) {
+            if (query.isEmpty()) Text(stringResource(R.string.history_search), style = BodyL, color = c.mute)
+            BasicTextField(query, onChange, singleLine = true, textStyle = BodyL.copy(color = c.ink),
+                cursorBrush = SolidColor(c.ink), modifier = Modifier.fillMaxWidth())
         }
-        Text(record.text, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Row(Modifier.fillMaxWidth()) {
-            Text(
-                Instant.ofEpochMilli(record.timestamp).atZone(ZoneId.systemDefault()).format(dateFormat),
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            Text(sourceLabel(record.source), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (query.isNotEmpty()) {
+            IconButton(onClick = { onChange("") }) {
+                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.cancel), tint = c.subtle)
+            }
+        } else {
+            Spacer(Modifier.width(Space.m))
         }
     }
 }
 
+/** Rounded filter tab. Selected = ink fill; verdict tabs show their color dot. */
 @Composable
-private fun sourceLabel(source: MessageSource) = stringResource(
-    when (source) {
-        MessageSource.SMS -> R.string.source_sms
-        MessageSource.NOTIFICATION -> R.string.source_notification
-        MessageSource.MANUAL -> R.string.source_manual
+private fun FilterTab(label: String, verdict: Verdict?, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val c = Sipat.colors
+    Row(
+        modifier.heightIn(min = 40.dp)
+            .background(if (selected) c.ink else c.card, Radius.pill)
+            .border(1.dp, if (selected) c.ink else c.line, Radius.pill)
+            .clickable(role = Role.RadioButton, onClick = onClick)
+            .semantics { this.selected = selected }
+            .padding(horizontal = Space.s),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (verdict != null) {
+            Box(Modifier.size(8.dp).background(c.status(verdict).strong, CircleShape))
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(label, style = Label.copy(fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium),
+            color = if (selected) c.paper else c.ink, maxLines = 1)
     }
-)
+}
+
+/** One checked message as a card: badge + time, sender, two-line preview. */
+@Composable
+private fun HistoryCard(record: ScanRecord, onClick: () -> Unit) {
+    val c = Sipat.colors
+    val sender = record.sender.takeIf { it != RoomScanRepository.NO_SENDER } ?: stringResource(R.string.history_unknown_sender)
+    val ago = DateUtils.getRelativeTimeSpanString(record.timestamp, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+    Column(
+        Modifier.fillMaxWidth().background(c.card, Radius.card).border(1.dp, c.line, Radius.card)
+            .clickable(onClick = onClick).padding(Space.l),
+        verticalArrangement = Arrangement.spacedBy(Space.s),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusBadge(record.verdict)
+            Spacer(Modifier.weight(1f))
+            Text(ago, style = BodyM, color = c.mute)
+        }
+        Text(sender, style = Title.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(record.text, style = BodyM, color = c.subtle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+}
