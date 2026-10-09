@@ -39,6 +39,15 @@ class AppGraph(context: Context) {
     val templateExplainer = TemplateExplainer()
     val llmExplainer = LlmExplainer(context)
     val aiExplanations = MutableStateFlow(prefs.aiExplanations)
+
+    // Finished LLM explanations, so reopening a result (History, alert, language switch) doesn't make Gemma
+    // write the same text again (~13 s on a mid-range phone). Key = language + verdict + message; last 50 kept.
+    private val explanationCache = object : LinkedHashMap<String, String>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?) = size > 50
+    }
+
+    fun cachedExplanation(key: String): String? = synchronized(explanationCache) { explanationCache[key] }
+    fun cacheExplanation(key: String, text: String) = synchronized(explanationCache) { explanationCache[key] = text }
 }
 
 class SipatApp : Application() {

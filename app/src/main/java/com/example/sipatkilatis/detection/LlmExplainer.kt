@@ -55,6 +55,12 @@ class LlmExplainer(context: Context) {
     val modelFile: File get() = File(appContext.getExternalFilesDir(null), "llm/model.task")
     val isInstalled: Boolean get() = modelFile.exists() && modelFile.length() > 100_000_000
 
+    init {
+        // Create llm/ as the app. If `adb push` creates it instead, the folder belongs to the shell user and
+        // Android 11+ won't let the app open it, so the model shows as "not installed".
+        runCatching { modelFile.parentFile?.mkdirs() }
+    }
+
     /** Loads the model once (several seconds the first time). Returns false if it is missing or fails. */
     suspend fun load(): Boolean = withContext(Dispatchers.IO) {
         mutex.withLock {
