@@ -7,6 +7,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import com.example.sipatkilatis.ui.components.navBarClearance
+import com.example.sipatkilatis.ui.theme.Space
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +89,8 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
         restoreState = true
     }
 
+    val historySnackbar = remember { SnackbarHostState() }
+
     Box(Modifier.fillMaxSize()) {
     NavHost(navController = nav, startDestination = if (onboardingDone) Routes.HOME else Routes.ONBOARDING) {
         composable(Routes.ONBOARDING) {
@@ -151,6 +159,7 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
                 onOpen = { id -> vm.openScan(id) { nav.navigate(Routes.RESULT) } },
                 onDelete = vm::deleteScan,
                 onRestore = vm::restoreScan,
+                snackbar = historySnackbar,
             )
         }
         composable(Routes.DEMO) {
@@ -190,5 +199,8 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
         ) {
             FloatingNavBar(current = route, onSelect = ::openTab)
         }
+        // Last child = top layer for touches: History's "Message deleted · Undo" pill must never lose its tap
+        // to the list or the nav bar underneath
+        SnackbarHost(historySnackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = navBarClearance() - Space.l))
     }
 }

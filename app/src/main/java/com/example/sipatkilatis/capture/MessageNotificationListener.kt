@@ -90,6 +90,21 @@ class MessageNotificationListener : NotificationListenerService() {
         """^[^\p{L}\p{N}]*(a link was sent to you|[^:\n]{1,40} (sent|shared) a link|nagpadala ng link|may ipinadalang link)\.?\s*$""",
         RegexOption.IGNORE_CASE)
 
+    /**
+     * Placeholder a chat app shows for a photo, sticker, voice message, reaction, etc. ("📷 Ana sent a photo.").
+     * There is no text to judge, so scanning it would only add a meaningless SAFE entry to History.
+     * Whole-notification match only: a photo with a caption, or any real message, is still screened.
+     */
+    private val mediaPlaceholderText = Regex(
+        """^[^\p{L}\p{N}]*(""" +
+            """([^:\n]{1,40} )?sent (a |an |\d+ )?(photos?|pictures?|videos?|stickers?|gifs?|voice messages?|audio|attachments?|files?|locations?|contacts?)""" +
+            // "Ahl reacted ❤ to: finishing up", "Jerwin reacted with 🥰 to your photo"
+            """|([^:\n]{1,40} )?(reacted|nag-react)( with)? \S{1,12} (to|sa)\b.*""" +
+            """|([^:\n]{1,40} )?liked (a|your) message""" +
+            """|([^:\n]{1,40} )?nagpadala ng (larawan|litrato|video|sticker|gif|voice message|attachment|file)""" +
+            """)\.?\s*$""",
+        RegexOption.IGNORE_CASE)
+
     /** Xiaomi's SMS app puts "4 messages | " in front of the newest message; it is not part of the message. */
     private val messageCountPrefix = Regex("""^\s*\d+\s+(new\s+)?(messages?|mensahe)\s*\|\s*""", RegexOption.IGNORE_CASE)
 
@@ -136,6 +151,7 @@ class MessageNotificationListener : NotificationListenerService() {
             if (seen.containsKey(key)) return skip("already screened")
             seen[key] = true
         }
+        if (mediaPlaceholderText.matches(text)) return skip("photo / sticker / reaction, no text")
         if (hiddenLinkText.matches(text)) {
             Log.d(TAG, "notification from $pkg: link hidden by the app, asking the user to check it")
             applicationContext.graph.alerts.showHiddenLink(appNames[pkg] ?: "this app", sbn.key)

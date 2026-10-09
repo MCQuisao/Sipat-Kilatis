@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -76,12 +77,15 @@ fun HistoryScreen(
     onOpen: (Long) -> Unit,
     onDelete: (ScanRecord) -> Unit,
     onRestore: (ScanRecord) -> Unit,
+    snackbar: SnackbarHostState,   // shown by AppNavHost on top of every layer, so Undo always gets the tap
 ) {
     val c = Sipat.colors
     var filter by rememberSaveable { mutableStateOf<Verdict?>(null) }   // null = all
     var query by rememberSaveable { mutableStateOf("") }
-    val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    // How many times each scan was restored with Undo. Part of the list key: the swipe card saves its
+    // "swiped away" state per key, so a restored scan with the old key would instantly delete itself again.
+    var restores by remember { mutableStateOf(mapOf<Long, Int>()) }
     val deletedMsg = stringResource(R.string.history_deleted)
     val undo = stringResource(R.string.undo)
     val clearance = navBarClearance()
@@ -92,7 +96,6 @@ fun HistoryScreen(
 
     Scaffold(
         containerColor = c.paper,
-        snackbarHost = { SnackbarHost(snackbar, Modifier.padding(bottom = clearance - Space.l)) },
     ) { _ ->
         LazyColumn(
             Modifier.fillMaxSize(),
@@ -116,14 +119,22 @@ fun HistoryScreen(
                         stringResource(if (history.isEmpty()) R.string.history_empty else R.string.history_empty_filter))
                 }
             } else {
-                items(shown, key = { it.id }) { record ->
+                items(shown, key = { "${it.id}:${restores[it.id] ?: 0}" }) { record ->
                     val state = rememberSwipeToDismissBoxState()
                     SwipeToDismissBox(
                         state = state,
                         onDismiss = {
                             onDelete(record)
                             scope.launch {
-                                if (snackbar.showSnackbar(deletedMsg, undo) == SnackbarResult.ActionPerformed) onRestore(record)
+                                snackbar.currentSnackbarData?.dismiss()   // one Undo at a time
+                                // With an action, Compose defaults to an Indefinite snackbar that never goes away:
+                                // give it a timeout and a close button
+                                val result = snackbar.showSnackbar(deletedMsg, undo, withDismissAction = true,
+                                    duration = SnackbarDuration.Long)
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    restores = restores + (record.id to (restores[record.id] ?: 0) + 1)
+                                    onRestore(record)
+                                }
                             }
                         },
                         backgroundContent = {
