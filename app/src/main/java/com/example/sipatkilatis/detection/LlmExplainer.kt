@@ -39,6 +39,7 @@ class LlmExplainer(context: Context) {
     private val mutex = Mutex()
     private var llm: LlmInference? = null
     private val busy = AtomicInteger(0)   // generations currently running
+    private val generationLock = Mutex()  // MediaPipe can only run one generation at a time
 
     companion object {
         private const val TAG = "SipatKilatis"
@@ -83,57 +84,75 @@ class LlmExplainer(context: Context) {
      * Cancelling the collector stops generation.
      */
     fun stream(result: ScanResult, filipino: Boolean): Flow<String> = callbackFlow {
-        val engine = llm ?: throw IllegalStateException("LLM not loaded")
-        val session = LlmInferenceSession.createFromOptions(engine,
-            LlmInferenceSession.LlmInferenceSessionOptions.builder()
-                .setTopK(40)
-                .setTemperature(0.3f)    // low: stick to the facts we give it
-                .setRandomSeed(7)
-                .build())
-        val prompt = buildPrompt(result, filipino)
-        // MediaPipe rules (breaking them crashes the whole app from native code):
+        // MediaPipe rules (breaking them crashes the app, often from native code):
+        //  - ONE generation at a time per engine -> [generationLock] is held until the previous one fully stopped
         //  - no other LLM calls (e.g. sizeInTokens) while a generation is running -> count tokens BEFORE starting
         //  - never let an exception escape the progress callback
         //  - don't close the session until it reported done=true (also after a cancel)
-        val promptTokens = runCatching { engine.sizeInTokens(prompt) }.getOrDefault(-1)
+        generationLock.lock()
+        val engine: LlmInference
+        val session: LlmInferenceSession
+        val prompt = buildPrompt(result, filipino)
+        val promptTokens: Int
         val generationDone = CompletableDeferred<Unit>()
+        try {
+            engine = llm ?: throw IllegalStateException("LLM not loaded")
+            promptTokens = runCatching { engine.sizeInTokens(prompt) }.getOrDefault(-1)
+            session = LlmInferenceSession.createFromOptions(engine,
+                LlmInferenceSession.LlmInferenceSessionOptions.builder()
+                    .setTopK(40)
+                    .setTemperature(0.3f)    // low: stick to the facts we give it
+                    .setRandomSeed(7)
+                    .build())
+        } catch (t: Throwable) {
+            generationLock.unlock()
+            throw t   // the caller falls back to the template
+        }
         busy.incrementAndGet()
         val start = System.currentTimeMillis()
         var firstTokenMs = -1L
         var chunks = 0
         var stopped = false
+        var started = false
         val text = StringBuilder()
-        session.addQueryChunk(prompt)
-        session.generateResponseAsync { partial, done ->
-            try {
-                if (done) generationDone.complete(Unit)
-                if (stopped) return@generateResponseAsync
-                if (firstTokenMs < 0) firstTokenMs = System.currentTimeMillis() - start
-                chunks++
-                text.append(partial ?: "")
-                val cleaned = clean(text.toString())
-                trySend(cleaned)
-                val words = cleaned.split(Regex("\\s+")).size
-                // Stop on: model finished, answer too long, or endless near-empty output (seen on some phones)
-                if (done || words > MAX_WORDS || chunks > MAX_CHUNKS) {
-                    stopped = true
-                    Log.d(TAG, "LLM explanation: first token $firstTokenMs ms, total ${System.currentTimeMillis() - start} ms, " +
-                        "$words words, prompt $promptTokens tokens")
-                    channel.close()   // ends the flow; awaitClose below cancels (if needed) and cleans up
+        try {
+            session.addQueryChunk(prompt)
+            session.generateResponseAsync { partial, done ->
+                try {
+                    if (done) generationDone.complete(Unit)
+                    if (stopped) return@generateResponseAsync
+                    if (firstTokenMs < 0) firstTokenMs = System.currentTimeMillis() - start
+                    chunks++
+                    text.append(partial ?: "")
+                    val cleaned = clean(text.toString())
+                    trySend(cleaned)
+                    val words = cleaned.split(Regex("\\s+")).size
+                    // Stop on: model finished, answer too long, or endless near-empty output (seen on some phones)
+                    if (done || words > MAX_WORDS || chunks > MAX_CHUNKS) {
+                        stopped = true
+                        Log.d(TAG, "LLM explanation: first token $firstTokenMs ms, total ${System.currentTimeMillis() - start} ms, " +
+                            "$words words, prompt $promptTokens tokens")
+                        channel.close()   // ends the flow; awaitClose below cancels (if needed) and cleans up
+                    }
+                } catch (t: Throwable) {
+                    Log.e(TAG, "LLM callback error", t)
+                    channel.close(t)
                 }
-            } catch (t: Throwable) {
-                Log.e(TAG, "LLM callback error", t)
-                channel.close(t)
             }
+            started = true
+        } catch (t: Throwable) {
+            Log.e(TAG, "LLM could not start generating", t)
+            channel.close(t)
         }
         awaitClose {
-            if (!generationDone.isCompleted) runCatching { session.cancelGenerateResponseAsync() }
+            if (started && !generationDone.isCompleted) runCatching { session.cancelGenerateResponseAsync() }
             // Wait for MediaPipe to confirm it stopped before closing; if it never does, leave the session open
             // (a small leak) rather than crash the app.
-            val stoppedCleanly = runBlocking { withTimeoutOrNull(5_000) { generationDone.await() } } != null
+            val stoppedCleanly = !started || runBlocking { withTimeoutOrNull(5_000) { generationDone.await() } } != null
             if (stoppedCleanly) runCatching { session.close() }
             else Log.w(TAG, "LLM session did not stop after cancel; not closing it")
             busy.decrementAndGet()
+            generationLock.unlock()   // next explanation may start
         }
     }.flowOn(Dispatchers.Default)
 

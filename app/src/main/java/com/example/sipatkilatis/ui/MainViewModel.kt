@@ -11,6 +11,7 @@ import com.example.sipatkilatis.model.MessageSource
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Sensitivity
 import com.example.sipatkilatis.model.Verdict
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -91,9 +92,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
             var text = ""
-            val finished = withTimeoutOrNull(LlmExplainer.TIMEOUT_MS) {
-                llm.stream(result, filipino).collect { text = it }   // collected, but not shown until done
-                true
+            val finished = try {
+                withTimeoutOrNull(LlmExplainer.TIMEOUT_MS) {
+                    llm.stream(result, filipino).collect { text = it }   // collected, but not shown until done
+                    true
+                }
+            } catch (e: CancellationException) {
+                throw e   // a newer result replaced this one
+            } catch (e: Exception) {
+                // Any LLM problem must never crash the app: keep the template
+                Log.e("SipatKilatis", "LLM explanation failed; using template", e)
+                _explanation.value = ExplanationUi(template)
+                return@launch
             }
             _explanation.value = when {
                 finished != true -> {
