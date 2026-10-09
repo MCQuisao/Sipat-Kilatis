@@ -1,6 +1,8 @@
 # Sipat Kilatis ML: data prep, training, export
 torch
-transformers
+# transformers 5.x conflicts with optimum-onnx; unpinned, pip backtracks to an old optimum that
+# needs numpy 1.26, which has no Python 3.13 wheel and fails to compile on Windows.
+transformers>=4.45,<4.58
 datasets
 scikit-learn
 pandas
