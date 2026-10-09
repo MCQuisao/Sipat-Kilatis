@@ -204,7 +204,7 @@ Place the raw dataset at `ml/data/raw/spam_ham_dataset_updated (1).xlsx` first (
 
 ## Team
 
-Jerwin Alvarez
-Jenelle Salcedo
-Ahl Satingin
-Matthew Christian Quisao
+- Jerwin Alvarez
+- Jenelle Salcedo
+- Ahl Satingin
+- Matthew Christian Quisao
