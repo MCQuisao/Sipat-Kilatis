@@ -7,6 +7,26 @@ Works fully offline — your messages never leave your phone.
 
 Built for the **AppBuildersPH Hackathon 2026 — Local AI**.
 
+## Demo video
+
+[![Watch the Sipat Kilatis demo video](docs/images/video-thumbnail.jpg)](video/demo.mp4)
+
+▶️ [Watch the demo video (58 s)](video/demo.mp4)
+
+## Screenshots
+
+Taken on a REDMI Note 15 Pro+ running the release build, fully offline.
+
+<p align="center">
+  <img src="docs/images/home.png" width="250" alt="Home screen: protection is on, messages checked and scams caught">
+  &nbsp;
+  <img src="docs/images/result.png" width="250" alt="Result screen: a fake GCash text scored 70 of 100, Likely a scam, with what to do now">
+  &nbsp;
+  <img src="docs/images/explanation.png" width="250" alt="The risky words highlighted, an explanation written on the phone by Gemma, and the warning signs found">
+</p>
+
+<p align="center"><sub><b>Home</b> · <b>Result</b>: verdict, what to do, risky words highlighted · <b>Why</b>: explanation written on the phone by Gemma, plus the warning signs found</sub></p>
+
 ---
 
 ## The problem
