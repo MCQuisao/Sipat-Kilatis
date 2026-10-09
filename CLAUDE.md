@@ -34,8 +34,16 @@ SipatKilatis/
 - Code layout (`com.example.sipatkilatis`): `ui/` (screens, components, theme, `AppNavHost`, `MainViewModel`),
   `data/` (repository + preferences), `detection/` (engine interfaces), `model/` (data classes).
   Single `MainActivity` (AppCompatActivity, needed for per-app language) + one shared `MainViewModel`.
-- Placeholders to replace: `PlaceholderDetector` (phase 4), `FakeScanRepository` → Room (phase 7),
-  permission buttons (phase 5), online update button (phase 7).
+- Detection engine (`detection/`): `OnDeviceScamDetector` → `Preprocessor`, `RegexRulesEngine`, `OfflineUrlChecker`
+  (`assets/blocklist.txt`), `EnsembleClassifier` (`TextNormalizer` + `RobertaTokenizer` + ONNX), `RiskScorer`.
+  Models live in `app/src/main/assets/` (git-ignored: copy from `ml/models/` after training).
+  Android regex (ICU) is Unicode-aware by default and rejects `UNICODE_CHARACTER_CLASS`; use `TextNormalizer.UNICODE_FLAG`.
+- Tests: `.\gradlew.bat testDebugUnitTest` (normalizer + tokenizer parity with Python, 15 rule/URL messages, scorer);
+  `$env:ANDROID_SERIAL="emulator-5554"; .\gradlew.bat connectedDebugAndroidTest` (both ONNX models vs Python
+  test vectors within 0.02, end-to-end timing). Set ANDROID_SERIAL so tests never run on a personal phone.
+- ABIs limited to arm64-v8a + x86_64 (native libs are huge).
+- Placeholders to replace: `FakeScanRepository` → Room (phase 7), permission buttons (phase 5),
+  online update button (phase 7).
 - Strings: English in `res/values/`, Filipino in `res/values-fil/` (tag `fil`). Every user-facing string goes in both.
 - Build from a terminal: `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; .\gradlew.bat assembleDebug`.
 
@@ -56,13 +64,17 @@ SipatKilatis/
    - **URL checker**: offline blocklist, lookalike brand domains (gcash, maya, bdo, bpi, landbank,
      metrobank, unionbank, lazada, shopee, jnt, lbc, ...), URL shorteners, raw IP URLs,
      odd TLDs (.xyz, .top, .click, .icu, ...).
-   - **ML classifier**: fine-tuned `jcblaise/roberta-tagalog-base` exported to **quantized ONNX**,
-     run with **ONNX Runtime Android**. Fallback: **TF-IDF + logistic regression** (exported via skl2onnx).
+   - **ML classifier**: ensemble of two ONNX models run with **ONNX Runtime Android**:
+     fine-tuned `jcblaise/roberta-tagalog-base` (**quantized int8 ONNX**) and **TF-IDF + logistic regression**
+     (skl2onnx). `ML = (RoBERTa + baseline) / 2`. If one model fails to load, ML = the other one.
+     (Chosen after phase 2: the two make different mistakes; the average caught every scam in the test set.)
    - Combined score:
      ```
      score = 0.6*ML + 0.25*URL + 0.15*Rules
      if URL is in the known blocklist: score = max(score, 0.9)
+     if no ML model loaded:  score = (0.25*URL + 0.15*Rules) / 0.4
      ```
+   - Sensitivity shifts the thresholds (SUSPICIOUS / SCAM): Low 0.5 / 0.8, Normal 0.4 / 0.7, High 0.3 / 0.6.
    - Verdict: `score < 0.4` → **SAFE**, `0.4 <= score < 0.7` → **SUSPICIOUS**, `score >= 0.7` → **SCAM**.
 4. **Explainer** (only for SUSPICIOUS or SCAM)
    - Small local LLM (Gemma ~1B via **MediaPipe LLM Inference API**) writes a short explanation

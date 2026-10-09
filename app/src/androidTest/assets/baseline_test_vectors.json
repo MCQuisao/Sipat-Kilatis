@@ -1,0 +1,52 @@
+[
+  {
+    "text": "Your GCash account is locked, verify here: bit.ly/xyz",
+    "normalized": "your gcash account is locked, verify here: urltoken",
+    "scam_probability": 0.9541
+  },
+  {
+    "text": "BDO: Your account will be suspended. I-verify agad sa http://bdo-secure-ph.com within 24 hours",
+    "normalized": "bdo: your account will be suspended. i-verify agad sa urltoken within numtoken hours",
+    "scam_probability": 0.9053
+  },
+  {
+    "text": "Congrats! Nanalo ka ng P50,000 sa raffle. I-claim na ngayon, send your OTP to 09171234567",
+    "normalized": "congrats! nanalo ka ng amttoken sa raffle. i-claim na ngayon, send your otp to numtoken",
+    "scam_probability": 0.975
+  },
+  {
+    "text": "Your parcel is on hold. Pay delivery fee of PHP 150 here: jnt-ph.xyz/pay",
+    "normalized": "your parcel is on hold. pay delivery fee of amttoken here: urltoken",
+    "scam_probability": 0.7835
+  },
+  {
+    "text": "Loan approved! Get ₱20,000 cash today, no requirements. Reply YES",
+    "normalized": "loan approved! get amttoken cash today, no requirements. reply yes",
+    "scam_probability": 0.4006
+  },
+  {
+    "text": "Hi anak, uuwi ako mamaya mga 7pm. May ulam pa ba tayo?",
+    "normalized": "hi anak, uuwi ako mamaya mga numtoken pm. may ulam pa ba tayo?",
+    "scam_probability": 0.1213
+  },
+  {
+    "text": "Ok po ma'am, salamat sa update. Kita tayo bukas sa office.",
+    "normalized": "ok po ma'am, salamat sa update. kita tayo bukas sa office.",
+    "scam_probability": 0.0153
+  },
+  {
+    "text": "You have paid P215.00 of GCash to Dunkin Shell Roosevelt. Ref. No. 156419820.",
+    "normalized": "you have paid amttoken of gcash to dunkin shell roosevelt. ref. no. numtoken .",
+    "scam_probability": 0.14
+  },
+  {
+    "text": "Your OTP is 482913. Do not share this code with anyone.",
+    "normalized": "your otp is numtoken . do not share this code with anyone.",
+    "scam_probability": 0.0506
+  },
+  {
+    "text": "Meeting moved to 3pm tomorrow, see you there",
+    "normalized": "meeting moved to numtoken pm tomorrow, see you there",
+    "scam_probability": 0.3464
+  }
+]

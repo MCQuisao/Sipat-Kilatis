@@ -6,8 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.sipatkilatis.data.AppPreferences
 import com.example.sipatkilatis.data.FakeScanRepository
 import com.example.sipatkilatis.data.ScanRepository
-import com.example.sipatkilatis.detection.PlaceholderDetector
-import com.example.sipatkilatis.detection.ScamDetector
+import com.example.sipatkilatis.detection.OnDeviceScamDetector
 import com.example.sipatkilatis.model.MessageSource
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Sensitivity
@@ -18,7 +17,6 @@ import kotlinx.coroutines.launch
 /** App-wide state shared by all screens (single activity, one ViewModel keeps it simple). */
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = AppPreferences(app)
-    private val detector: ScamDetector = PlaceholderDetector()   // phase 4: real engine
     private val repo: ScanRepository = FakeScanRepository()      // phase 7: Room
 
     val history = repo.history
@@ -27,6 +25,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val onboardingDone = MutableStateFlow(prefs.onboardingDone)
     val protectionOn = MutableStateFlow(prefs.protectionOn)
     val sensitivity = MutableStateFlow(prefs.sensitivity)
+
+    // Real on-device engine; reads the current sensitivity and trusted contacts on every scan
+    private val detector = OnDeviceScamDetector(app, { sensitivity.value }, { trustedContacts.value })
+
+    init {
+        // Load the ONNX models in the background so the first scan doesn't wait for them
+        viewModelScope.launch { detector.warmUp() }
+    }
 
     /** Text in the "Check a message" box (also filled by the share sheet). */
     val draftText = MutableStateFlow("")

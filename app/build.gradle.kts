@@ -18,6 +18,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // ONNX Runtime + MediaPipe ship big native libraries per CPU type. Keep only 64-bit ARM (real phones)
+        // and x86_64 (emulator); this cuts ~110 MB. Add "armeabi-v7a" if a demo phone is 32-bit only.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
     }
 
     buildTypes {
@@ -36,6 +42,7 @@ android {
     }
     androidResources {
         generateLocaleConfig = true   // builds the English / Filipino list for per-app language settings
+        noCompress += "onnx"          // models are stored as-is in the APK, so copying them out on first run is fast
     }
 }
 
@@ -62,6 +69,7 @@ dependencies {
     implementation(libs.mediapipe.tasks.genai)    // local LLM explainer (phase 6)
 
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

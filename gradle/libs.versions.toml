@@ -17,6 +17,7 @@ appcompat = "1.8.0"                 # per-app language switching (English / Fili
 materialIcons = "1.7.8"             # no longer in the Compose BOM, pinned separately
 onnxruntime = "1.31.0"              # full package: the baseline model needs the com.microsoft Tokenizer op
 mediapipeGenai = "0.10.35"          # local LLM explainer (phase 6)
+orgJson = "20260814"                # real org.json for JVM unit tests (Android's copy is a stub there)
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +45,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 mediapipe-tasks-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipeGenai" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

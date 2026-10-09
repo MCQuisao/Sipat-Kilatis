@@ -1,0 +1,14 @@
+# Known scam domains, one per line (subdomains are matched too). Lines starting with # are ignored.
+# SAMPLE list for the hackathon build. Phase 7 adds an optional online update that replaces this file.
+gcash-verify.xyz
+gcash-verify.com
+bdo-secure-ph.com
+verify-ph.com
+secure-ph.com
+claim-reward-ph.com
+parcel-release-ph.com
+jnt-ph.top
+jnt-ph.xyz
+lazada-promo.top
+shopee-rewards.xyz
+maya-verify.click
