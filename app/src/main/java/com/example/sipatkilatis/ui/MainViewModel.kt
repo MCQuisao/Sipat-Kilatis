@@ -121,6 +121,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val llm = graph.llmExplainer
         if (result.verdict == Verdict.SAFE || !aiExplanations.value || !llm.isInstalled) return
 
+        // Already explained this message in this language: show it instantly instead of regenerating
+        val cacheKey = "$filipino|${result.verdict}|${result.text}"
+        graph.cachedExplanation(cacheKey)?.let {
+            _explanation.value = ExplanationUi(it, fromAi = true)
+            return
+        }
+
         explainJob = viewModelScope.launch {
             _explanation.value = ExplanationUi(template, generating = true)
             val loaded = withTimeoutOrNull(60_000) { llm.load() } ?: false
@@ -153,7 +160,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     Log.d("SipatKilatis", "LLM explanation rejected by safety check; using template")
                     ExplanationUi(template)
                 }
-                else -> ExplanationUi(text, fromAi = true)
+                else -> {
+                    graph.cacheExplanation(cacheKey, text)
+                    ExplanationUi(text, fromAi = true)
+                }
             }
         }
     }

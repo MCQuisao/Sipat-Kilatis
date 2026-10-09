@@ -16,32 +16,48 @@ links, "nanalo ka" prize claims, loan and job offers. These messages arrive in *
 Taglish**, and generic spam filters (built mostly on English data) miss many of them or can't explain why
 a message is dangerous.
 
+There's also a PH-specific blind spot: **local networks strip links from person-to-person SMS**, so many
+scam texts that actually reach phones have **no link at all**, only a convincing story ("nanalo ka",
+"i-text ang GCash number mo"). Link-based filters miss these. Sipat Kilatis is built to catch them.
+
 ## Why it runs locally
 
 | Reason | What it means for the user |
 |---|---|
 | **Private** | Reading SMS and chat notifications means seeing OTPs, bank alerts, and personal conversations. None of that is uploaded — detection happens entirely on the phone. |
 | **Works offline / on prepaid** | Protection doesn't depend on mobile data. It works in airplane mode, in dead zones, and on ₱0 load. |
-| **Instant** | Messages are scored the moment they arrive — no upload, no server queue (~25 ms per message for the transformer on a laptop CPU). |
+| **Instant** | Messages are scored the moment they arrive — no upload, no server queue. **~150 ms per message for the full pipeline on a mid-range phone** (Snapdragon 732G). |
 | **Free to run** | No per-message cloud API cost, so it can screen every message, all day. |
 
-Network access is **optional** and used only for blocklist / model updates. The app never depends on it —
-it currently ships **without the `INTERNET` permission** at all.
+The app ships **without the `INTERNET` permission** — it physically cannot send your messages anywhere.
+
+**Without local AI, there is no product.** All three models (RoBERTa-Tagalog, TF-IDF classifier, Gemma 3 1B)
+run on the phone and there is no cloud fallback. A cloud version would need to upload every SMS, OTP, and
+bank alert a user receives — exactly the data a scam-protection app should never send out.
 
 ---
 
-## Results so far
+## Results
 
-Both models are tested on a **held-out set of 173 real Philippine messages** (109 scam, 64 legit) that
+Everything is tested on a **held-out set of 173 real Philippine messages** (109 scam, 64 legit) that
 were never used for training.
 
-| Model | Size | Precision | Recall | F1 | FPR |
+| What is measured | Size | Precision | Recall | F1 | FPR |
 |---|---|---|---|---|---|
-| TF-IDF + LR (ONNX) | small | 0.964 | **0.991** | **0.977** | **0.063** |
-| RoBERTa-Tagalog (fp32) | 437 MB | 0.947 | 0.982 | 0.964 | 0.094 |
-| RoBERTa-Tagalog (**int8 ONNX**, on-device) | **110 MB** | 0.955 | 0.982 | 0.968 | 0.078 |
+| **Full app** (ensemble + rules + URL checks), on the phone — counts SUSPICIOUS or SCAM as a warning | 112 MB | **0.991** | 0.972 | **0.981** | **0.016** |
+| TF-IDF + LR alone (ONNX) | 1.5 MB | 0.964 | **0.991** | 0.977 | 0.063 |
+| RoBERTa-Tagalog alone (fp32) | 437 MB | 0.947 | 0.982 | 0.964 | 0.094 |
+| RoBERTa-Tagalog alone (**int8 ONNX**, on-device) | **110 MB** | 0.955 | 0.982 | 0.968 | 0.078 |
 
-**In plain words (TF-IDF + LR):** catches **108 of 109 scams**, and wrongly flags **4 of 64** legit messages.
+**In plain words (full app):** warns on **106 of 109 scams**, and wrongly warns on only **1 of 64** legit messages.
+Each message takes **~37 ms** end to end on a REDMI Note 15 Pro+ (Snapdragon 7s Gen 3).
+
+The full-app row comes from `SystemEvalTest` (`app/src/androidTest`), which runs every test message through the
+same `OnDeviceScamDetector` the app uses, at Normal sensitivity. The rules and URL checks turn the ensemble's
+5 false alarms into 1, at the cost of 3 missed scams:
+- missed: a bare code-style text ("Hello 4 9 3 4 Use it please"), a casino ad written entirely in Chinese, and a
+  crypto "kumikita ako ng isang milyon" pitch — all scored just under the SUSPICIOUS line (0.31–0.40)
+- false alarm: a real foodpanda delivery-tracking text with a link (flagged SUSPICIOUS)
 
 - **Precision**: when the app says *scam*, how often it's right.
 - **Recall**: out of all real scams, how many it catches.
@@ -96,7 +112,7 @@ Explainer (SUSPICIOUS / SCAM only)
 | Rule | Why |
 |---|---|
 | Strong scam phrases (Rules ≥ 0.6) → at least **SCAM**; medium (≥ 0.4) → at least **SUSPICIOUS** | PH networks strip links from person-to-person SMS, so many real scam texts have **no link** — and the ML models (trained mostly on link scams) would score them low. On the dataset, **0 of 1,864 legit messages** reach the medium rule level. |
-| Every link goes to an official site (gcash.com, lazada.com.ph, zoom.us …) and no strong phrases → capped at **SAFE** | The ML models treat *any* link as scam-like, which would flag real bank and shop messages. (All of google.com / facebook.com do **not** count as official — anyone can publish forms and pages there.) |
+| Every link goes to an official site (gcash.com, lazada.com.ph, zoom.us …) and no strong phrases → capped at **SAFE** | Prevents false alarms on legit bank, shop, and meeting messages: almost every link in the training data was a scam link, so the ML score alone rises for *any* link. This cap fixes that. (All of google.com / facebook.com do **not** count as official — anyone can publish forms and pages there.) |
 | Link on the offline blocklist → at least **0.9 (SCAM)** | Known scam domains are always flagged. |
 
 **Sensitivity setting** shifts the SUSPICIOUS / SCAM thresholds: Low 0.5 / 0.8 · Normal 0.4 / 0.7 · High 0.3 / 0.6.
@@ -296,6 +312,13 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 adb install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
 adb shell am instrument -w -e class com.example.sipatkilatis.detection.LlmOnDeviceTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
 
+# Full-app accuracy on the 173 test messages (needs ml/data/processed/messages.csv and both ONNX models).
+# Run once without the CSV so the app creates eval/ itself, then push the CSV and run again.
+adb shell am instrument -w -e class com.example.sipatkilatis.detection.SystemEvalTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
+adb push ml\data\processed\messages.csv /sdcard/Android/data/com.example.sipatkilatis/files/eval/messages.csv
+adb shell am instrument -w -e class com.example.sipatkilatis.detection.SystemEvalTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
+adb shell cat /sdcard/Android/data/com.example.sipatkilatis/files/eval/system_eval.txt
+
 # Run demo mode from a computer and read the results from the log
 adb shell am start -n com.example.sipatkilatis/.MainActivity --ez open_demo true
 adb logcat -s SipatKilatis | findstr DEMO
@@ -320,16 +343,39 @@ adb -s emulator-5554 emu sms send 09171234567 "GCash: Na-lock ang account mo. I-
 **Models**
 - `jcblaise/roberta-tagalog-base` — fine-tuned on our data, exported to int8 ONNX
 - TF-IDF + logistic regression (scikit-learn) — exported to ONNX; averaged with RoBERTa on-device (ensemble)
-- Gemma ~1B via MediaPipe LLM Inference API — explanation generation *(in progress)*
+- Gemma 3 1B IT (int4, `gemma3-1b-it-int4.task` from [litert-community/Gemma3-1B-IT](https://huggingface.co/litert-community/Gemma3-1B-IT),
+  Gemma license) — run on the phone GPU with the MediaPipe LLM Inference API to write explanations
 
 **Frameworks and libraries**
 - Python: scikit-learn, pandas, openpyxl, PyTorch, Hugging Face Transformers / Datasets / Optimum / Accelerate / Evaluate, ONNX, ONNX Runtime, skl2onnx
 - Android: Kotlin, Jetpack Compose, Material 3, Navigation Compose, AppCompat, Kotlin Coroutines, Room, ONNX Runtime Android, MediaPipe Tasks GenAI
 
-**Datasets**
-- [UCI SMS Spam Collection](https://archive.ics.uci.edu/dataset/228/sms+spam+collection) (Almeida & Hidalgo)
-- Real Philippine scam / ham messages (collected, anonymized with `<REAL NAME>`; not published)
+**Datasets** (merged, cleaned, and deduplicated by `prepare_data.py`; the merged file is not published because it
+contains real messages)
+
+*SMS scam / spam messages*
+- [UCI SMS Spam Collection](https://archive.ics.uci.edu/dataset/228/sms+spam+collection) (Almeida & Hidalgo),
+  also via [Sarthakdwivedi78/Sms-Email-spam-classifier](https://github.com/Sarthakdwivedi78/Sms-Email-spam-classifier/blob/main/spam.csv)
+- [Yissuh/Filipino-Spam-SMS-Detection-Model](https://github.com/Yissuh/Filipino-Spam-SMS-Detection-Model)
+  — `data-set.csv`, `merged-set.csv` (BSD-3-Clause)
+- [AGR-Yes/ScamMessagesPhilippines](https://github.com/AGR-Yes/ScamMessagesPhilippines)
+  — `Raw Datasets/SPAM_SMS.csv`, `Raw Datasets/Scam_SMS_Reports.xlsx`
+- [jamesjmnz/AIlagmatha](https://github.com/jamesjmnz/AIlagmatha) — `scam_dataset.csv`, `scam_dataset_test.csv`
 - Synthetic Philippine message templates
+
+*Phishing URLs*
+- [0xp0tato/Phishing-Url-Detection-Using-Machine-Learning](https://github.com/0xp0tato/Phishing-Url-Detection-Using-Machine-Learning/blob/master/dataset.csv)
+- [Phishing Dataset (UCI ML, CSV)](https://www.kaggle.com/datasets/isatish/phishing-dataset-uci-ml-csv) on Kaggle
+
+*Reference*
+- [GCash Help Center](https://help.gcash.com/hc/en-us) — official GCash domains and scam warnings
+
+Personal names in the real messages are replaced with `<REAL NAME>`. Except where noted, the source repositories
+state no license; they are credited here and their data is not redistributed.
+
+**Pre-existing code / assets**
+- Code: none — the repository was created at the start of the hackathon (see the commit history).
+- Assets: only the open-source models and datasets listed above.
 
 **Cloud APIs**
 - None. Google Colab is an optional training environment only; the app itself never calls a cloud service.
@@ -339,7 +385,25 @@ adb -s emulator-5554 emu sms send 09171234567 "GCash: Na-lock ang account mo. I-
 
 ---
 
-## Team
+## Known limitations
+
+- **Small test set:** 173 held-out real PH messages. One message moves FPR by ~1.6 points, so treat the
+  scores as a strong first result, not a final benchmark.
+- **Most scams are labelled SUSPICIOUS, not SCAM:** on the test set, only 10 of 109 scams reach the SCAM level
+  (heads-up alert); the rest get a SUSPICIOUS warning (normal notification). Raising them to SCAM needs a
+  retune of the weights / thresholds, checked against the false-alarm rate.
+- **Sample blocklist:** `blocklist.txt` is a short hackathon list; there is no online update (by design — no internet permission).
+- **Gemma is slow on mid-range phones:** ~10 s to load once, ~11 s per explanation. The template explanation
+  is shown instantly meanwhile.
+- **Large app:** ~235 MB release APK (RoBERTa is 110 MB), plus the optional 555 MB Gemma model.
+- **Sideloading friction:** Play Protect warns about an app that reads SMS, and Android 13+ requires
+  **Allow restricted settings** before notification access can be granted.
+- **Only screens what Android lets it see:** messages hidden or removed by carrier or phone spam filters
+  never reach the app.
+
+---
+
+## Team: LFInternship
 - Ahl B. Satingin
 - Jerwin L. Alvarez
 - Jenelle G. Salcedo
