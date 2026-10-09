@@ -39,16 +39,25 @@ bank alert a user receives — exactly the data a scam-protection app should nev
 
 ## Results
 
-Both models are tested on a **held-out set of 173 real Philippine messages** (109 scam, 64 legit) that
+Everything is tested on a **held-out set of 173 real Philippine messages** (109 scam, 64 legit) that
 were never used for training.
 
-| Model | Size | Precision | Recall | F1 | FPR |
+| What is measured | Size | Precision | Recall | F1 | FPR |
 |---|---|---|---|---|---|
-| TF-IDF + LR (ONNX) | small | 0.964 | **0.991** | **0.977** | **0.063** |
-| RoBERTa-Tagalog (fp32) | 437 MB | 0.947 | 0.982 | 0.964 | 0.094 |
-| RoBERTa-Tagalog (**int8 ONNX**, on-device) | **110 MB** | 0.955 | 0.982 | 0.968 | 0.078 |
+| **Full app** (ensemble + rules + URL checks), on the phone — counts SUSPICIOUS or SCAM as a warning | 112 MB | **0.991** | 0.972 | **0.981** | **0.016** |
+| TF-IDF + LR alone (ONNX) | 1.5 MB | 0.964 | **0.991** | 0.977 | 0.063 |
+| RoBERTa-Tagalog alone (fp32) | 437 MB | 0.947 | 0.982 | 0.964 | 0.094 |
+| RoBERTa-Tagalog alone (**int8 ONNX**, on-device) | **110 MB** | 0.955 | 0.982 | 0.968 | 0.078 |
 
-**In plain words (TF-IDF + LR):** catches **108 of 109 scams**, and wrongly flags **4 of 64** legit messages.
+**In plain words (full app):** warns on **106 of 109 scams**, and wrongly warns on only **1 of 64** legit messages.
+Each message takes **~37 ms** end to end on a REDMI Note 15 Pro+ (Snapdragon 7s Gen 3).
+
+The full-app row comes from `SystemEvalTest` (`app/src/androidTest`), which runs every test message through the
+same `OnDeviceScamDetector` the app uses, at Normal sensitivity. The rules and URL checks turn the ensemble's
+5 false alarms into 1, at the cost of 3 missed scams:
+- missed: a bare code-style text ("Hello 4 9 3 4 Use it please"), a casino ad written entirely in Chinese, and a
+  crypto "kumikita ako ng isang milyon" pitch — all scored just under the SUSPICIOUS line (0.31–0.40)
+- false alarm: a real foodpanda delivery-tracking text with a link (flagged SUSPICIOUS)
 
 - **Precision**: when the app says *scam*, how often it's right.
 - **Recall**: out of all real scams, how many it catches.
@@ -303,6 +312,13 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 adb install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
 adb shell am instrument -w -e class com.example.sipatkilatis.detection.LlmOnDeviceTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
 
+# Full-app accuracy on the 173 test messages (needs ml/data/processed/messages.csv and both ONNX models).
+# Run once without the CSV so the app creates eval/ itself, then push the CSV and run again.
+adb shell am instrument -w -e class com.example.sipatkilatis.detection.SystemEvalTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
+adb push ml\data\processed\messages.csv /sdcard/Android/data/com.example.sipatkilatis/files/eval/messages.csv
+adb shell am instrument -w -e class com.example.sipatkilatis.detection.SystemEvalTest com.example.sipatkilatis.test/androidx.test.runner.AndroidJUnitRunner
+adb shell cat /sdcard/Android/data/com.example.sipatkilatis/files/eval/system_eval.txt
+
 # Run demo mode from a computer and read the results from the log
 adb shell am start -n com.example.sipatkilatis/.MainActivity --ez open_demo true
 adb logcat -s SipatKilatis | findstr DEMO
@@ -373,6 +389,9 @@ state no license; they are credited here and their data is not redistributed.
 
 - **Small test set:** 173 held-out real PH messages. One message moves FPR by ~1.6 points, so treat the
   scores as a strong first result, not a final benchmark.
+- **Most scams are labelled SUSPICIOUS, not SCAM:** on the test set, only 10 of 109 scams reach the SCAM level
+  (heads-up alert); the rest get a SUSPICIOUS warning (normal notification). Raising them to SCAM needs a
+  retune of the weights / thresholds, checked against the false-alarm rate.
 - **Sample blocklist:** `blocklist.txt` is a short hackathon list; there is no online update (by design — no internet permission).
 - **Gemma is slow on mid-range phones:** ~10 s to load once, ~11 s per explanation. The template explanation
   is shown instantly meanwhile.
