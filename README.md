@@ -160,8 +160,6 @@ cd ml
 .venv/bin/python train_baseline.py
 ```
 
-Place the raw dataset at `ml/data/raw/spam_ham_dataset_updated (1).xlsx` first (raw data is not committed).
-
 ### Android
 
 1. Open the repository root in **Android Studio**.
@@ -189,16 +187,9 @@ Place the raw dataset at `ml/data/raw/spam_ham_dataset_updated (1).xlsx` first (
 - [UCI SMS Spam Collection](https://archive.ics.uci.edu/dataset/228/sms+spam+collection) (Almeida & Hidalgo)
 - Real Philippine scam / ham messages (collected, anonymized with `<REAL NAME>`)
 - Synthetic Philippine message templates
-- _List any other sources here (e.g. third-party scam datasets, with author credit)._
-
-**Cloud APIs**
-- None required. Optional online updates (blocklist / model) only.
 
 **AI-assisted development**
-- _List the tools used (e.g. Claude Code, Devin)._
-
-**Pre-existing code / assets**
-- _None — or list them here._
+- Claude Code
 
 ---
 
