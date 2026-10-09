@@ -1,5 +1,6 @@
 package com.example.sipatkilatis.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,7 +44,7 @@ import java.time.format.FormatStyle
 
 /** Past scans with verdict, date, and sender, filterable by verdict. */
 @Composable
-fun HistoryScreen(history: List<ScanRecord>, onBack: () -> Unit) {
+fun HistoryScreen(history: List<ScanRecord>, onOpen: (Long) -> Unit, onBack: () -> Unit) {
     var filter by rememberSaveable { mutableStateOf<Verdict?>(null) }   // null = all
     val shown = if (filter == null) history else history.filter { it.verdict == filter }
 
@@ -69,7 +70,7 @@ fun HistoryScreen(history: List<ScanRecord>, onBack: () -> Unit) {
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(shown, key = { it.id }) { HistoryItem(it) }
+                    items(shown, key = { it.id }) { HistoryItem(it, onClick = { onOpen(it.id) }) }
                 }
             }
         }
@@ -79,8 +80,9 @@ fun HistoryScreen(history: List<ScanRecord>, onBack: () -> Unit) {
 private val dateFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
 
 @Composable
-private fun HistoryItem(record: ScanRecord) {
-    SectionCard {
+private fun HistoryItem(record: ScanRecord, onClick: () -> Unit) {
+    // Sample rows have no saved result, so only real scans open the Result screen
+    SectionCard(modifier = if (record.result != null) Modifier.clickable(onClick = onClick) else Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(record.sender, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f),
                 maxLines = 1, overflow = TextOverflow.Ellipsis)

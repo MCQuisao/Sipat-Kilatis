@@ -42,7 +42,13 @@ SipatKilatis/
   `$env:ANDROID_SERIAL="emulator-5554"; .\gradlew.bat connectedDebugAndroidTest` (both ONNX models vs Python
   test vectors within 0.02, end-to-end timing). Set ANDROID_SERIAL so tests never run on a personal phone.
 - ABIs limited to arm64-v8a + x86_64 (native libs are huge).
-- Placeholders to replace: `FakeScanRepository` → Room (phase 7), permission buttons (phase 5),
+- App-wide singletons in `SipatApp.AppGraph` (detector, repo, prefs, alerts, screener), shared by the UI and
+  background capture (`capture/`): `SmsReceiver` (manifest, goAsync), `MessageNotificationListener` (watched apps +
+  default SMS app), `MessageScreener` (protection check, 10 s duplicate window), `ScamAlerts` (SCAM = high-importance
+  heads-up, SUSPICIOUS = default, SAFE = none; "View details" / "Mark as safe"; system "Open link" smart actions OFF).
+- Test SMS on the emulator: `adb -s emulator-5554 emu sms send 09171234567 "message"`. A force-stopped app gets no
+  SMS broadcasts until it is opened again (Android rule), so test by opening the app once, then pressing Home.
+- Placeholders to replace: `FakeScanRepository` → Room (phase 7; history resets when the process dies),
   online update button (phase 7).
 - Strings: English in `res/values/`, Filipino in `res/values-fil/` (tag `fil`). Every user-facing string goes in both.
 - Build from a terminal: `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; .\gradlew.bat assembleDebug`.
@@ -71,9 +77,19 @@ SipatKilatis/
    - Combined score:
      ```
      score = 0.6*ML + 0.25*URL + 0.15*Rules
-     if URL is in the known blocklist: score = max(score, 0.9)
      if no ML model loaded:  score = (0.25*URL + 0.15*Rules) / 0.4
+     if ALL links are official (brand sites, zoom.us, meet.google.com, teams) and Rules < 0.4:
+         score = min(score, 0.25)                  # SAFE: the ML models treat any link as scam-like
+     if Rules >= 0.6: score = max(score, 0.7)      # strong phrase rules -> SCAM
+     elif Rules >= 0.4: score = max(score, 0.4)    # medium phrase rules -> at least SUSPICIOUS
+     if URL is in the known blocklist: score = max(score, 0.9)
      ```
+     Why the rule floors (added in phase 5): PH networks strip links from person-to-person SMS, so most scam
+     texts that reach phones have no link, and the ML models (trained mostly on link scams) score them low.
+     Measured on the dataset: 0 of 1,864 ham messages reach Rules >= 0.4 (RuleFloorReportTest).
+     Official-link cap: whole google.com / facebook.com are NOT official (anyone can publish forms / pages there).
+   - URL checker also recognises disguised links (`gcash-verify[.]xyz`, `(.)`, `(dot)`, ` dot `, ` . `, `bit ly/x`)
+     and rebuilds them as normal domains for the blocklist / lookalike checks.
    - Sensitivity shifts the thresholds (SUSPICIOUS / SCAM): Low 0.5 / 0.8, Normal 0.4 / 0.7, High 0.3 / 0.6.
    - Verdict: `score < 0.4` → **SAFE**, `0.4 <= score < 0.7` → **SUSPICIOUS**, `score >= 0.7` → **SCAM**.
 4. **Explainer** (only for SUSPICIOUS or SCAM)

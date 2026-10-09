@@ -76,9 +76,10 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SectionCard(title = stringResource(R.string.settings_language)) {
+                val context = LocalContext.current
                 val current = AppLanguage.current()
-                LanguageOption(stringResource(R.string.lang_filipino), current == AppLanguage.FILIPINO) { AppLanguage.set(AppLanguage.FILIPINO) }
-                LanguageOption(stringResource(R.string.lang_english), current == AppLanguage.ENGLISH) { AppLanguage.set(AppLanguage.ENGLISH) }
+                LanguageOption(stringResource(R.string.lang_filipino), current == AppLanguage.FILIPINO) { AppLanguage.set(context, AppLanguage.FILIPINO) }
+                LanguageOption(stringResource(R.string.lang_english), current == AppLanguage.ENGLISH) { AppLanguage.set(context, AppLanguage.ENGLISH) }
             }
 
             SectionCard(title = stringResource(R.string.settings_sensitivity)) {

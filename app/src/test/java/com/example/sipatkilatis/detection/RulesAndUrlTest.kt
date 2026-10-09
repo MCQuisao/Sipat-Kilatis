@@ -73,6 +73,52 @@ class RulesAndUrlTest {
     }
 
     @Test
+    fun disguisedLinksAreRecognized() {
+        fun hosts(text: String) = Preprocessor.process(text).urls.map { it.value }
+        assertEquals(listOf("gcash-verify.xyz/login"), hosts("I-verify agad sa gcash-verify[.]xyz/login"))
+        assertEquals(listOf("gcash-verify.xyz"), hosts("go to gcash-verify(.)xyz now"))
+        assertEquals(listOf("gcash-verify.xyz"), hosts("go to gcash-verify(dot)xyz now"))
+        assertEquals(listOf("gcash-verify.xyz"), hosts("go to gcash-verify dot xyz now"))
+        assertEquals(listOf("bdo-secure.com/login"), hosts("visit bdo-secure . com/login"))
+        assertEquals(listOf("bit.ly/abc"), hosts("i-claim sa bit ly/abc"))
+        // Blocklist works on the rebuilt domain -> forces the 0.9 floor
+        assertTrue(urls.check(Preprocessor.process("I-verify agad sa gcash-verify[.]xyz/login")).blocklisted)
+        // Normal sentences are not links
+        assertTrue(hosts("Uuwi ako. Top ka talaga anak!").isEmpty())
+        assertTrue(hosts("Ok po, salamat. Kita tayo bukas.").isEmpty())
+    }
+
+    @Test
+    fun strongRulesSetMinimumScore() {
+        // Link stripped by the network: ML unsure, rules strong -> SCAM
+        assertEquals(0.7f, RiskScorer.score(0.12f, 0f, 0.65f, false), 1e-6f)
+        assertEquals(Verdict.SCAM, RiskScorer.verdict(RiskScorer.score(0.12f, 0f, 0.65f, false), Sensitivity.NORMAL))
+        // Medium rules -> at least SUSPICIOUS
+        assertEquals(Verdict.SUSPICIOUS, RiskScorer.verdict(RiskScorer.score(0.28f, 0f, 0.55f, false), Sensitivity.NORMAL))
+        // Weak rules -> formula unchanged
+        assertEquals(0.6f * 0.1f + 0.15f * 0.3f, RiskScorer.score(0.1f, 0f, 0.3f, false), 1e-6f)
+        // A floor never lowers a higher score
+        assertEquals(0.6f * 1f + 0.25f * 1f + 0.15f * 0.65f, RiskScorer.score(1f, 1f, 0.65f, false), 1e-6f)
+    }
+
+    @Test
+    fun officialLinksCapTheScore() {
+        fun official(text: String) = urls.check(Preprocessor.process(text)).allOfficial
+        assertTrue(official("Here is your GCash receipt: https://www.gcash.com/help"))
+        assertTrue(official("Track it at https://www.lazada.com.ph/orders"))
+        assertTrue(official("Details at smrt.ph/giga50"))
+        assertTrue(official("meeting: https://us02web.zoom.us/j/123456789"))
+        assertTrue(!official("no link here"))
+        assertTrue(!official("gcash.com/help and also gcash-promo.com/register"))   // one unofficial link is enough
+        assertTrue(!official("see docs.google.com/forms/abc"))                     // anyone can make a Google Form
+        assertTrue(!official("bit.ly/abc"))
+        // ML says scam (0.98) but every link is official and no rules fire -> SAFE
+        assertEquals(Verdict.SAFE, RiskScorer.verdict(RiskScorer.score(0.98f, 0f, 0f, false, true), Sensitivity.HIGH))
+        // Official link + strong scam wording ("send your OTP") -> rule floor still wins
+        assertEquals(Verdict.SCAM, RiskScorer.verdict(RiskScorer.score(0.98f, 0f, 0.65f, false, true), Sensitivity.NORMAL))
+    }
+
+    @Test
     fun highlightsPointAtOriginalText() {
         val text = "Your GC@SH acc0unt is l0cked. V3rify now"
         val r = rules.check(Preprocessor.process(text))

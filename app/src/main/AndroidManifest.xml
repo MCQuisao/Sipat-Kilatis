@@ -2,9 +2,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Read incoming SMS to check them for scams (sideloaded hackathon build, not for the Play Store) -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <!-- Show scam alerts (runtime permission on Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Know which SMS app is the default, so its notifications are screened too -->
+    <queries>
+        <intent>
+            <action android:name="android.provider.Telephony.SMS_DELIVER" />
+        </intent>
+    </queries>
     <!-- No INTERNET permission yet: everything runs on-device. (Optional online updates come in phase 7.) -->
 
     <application
+        android:name=".SipatApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -34,6 +45,34 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- Incoming SMS. Declared here (not in code) so it works in the background and after reboot.
+             BROADCAST_SMS: only the system can send this broadcast, other apps cannot fake an SMS. -->
+        <receiver
+            android:name=".capture.SmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Chat app notifications (Messenger, Viber, ...). The user enables this in system Settings;
+             Android re-binds it automatically after reboot. -->
+        <service
+            android:name=".capture.MessageNotificationListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- "Mark as safe" button on scam alerts -->
+        <receiver
+            android:name=".capture.AlertActionReceiver"
+            android:exported="false" />
 
         <!-- Stores the per-app language choice (English / Filipino) on Android 12 and below -->
         <service

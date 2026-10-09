@@ -13,14 +13,16 @@ import kotlinx.coroutines.flow.update
 interface ScanRepository {
     val history: StateFlow<List<ScanRecord>>
     val trustedContacts: StateFlow<List<String>>
-    fun addScan(result: ScanResult, source: MessageSource)
+    fun addScan(result: ScanResult, source: MessageSource): ScanRecord
+    fun find(id: Long): ScanRecord?
     fun addTrustedContact(sender: String)
     fun removeTrustedContact(sender: String)
 }
 
 /**
  * In-memory placeholder with sample data so the screens have something to show.
- * Replaced by a Room-backed repository in phase 7.
+ * Shared by the UI and the background SMS / notification screening (one instance per app process).
+ * Replaced by a Room-backed repository in phase 7 (history currently resets when the app process restarts).
  */
 class FakeScanRepository : ScanRepository {
     private val now = System.currentTimeMillis()
@@ -47,9 +49,10 @@ class FakeScanRepository : ScanRepository {
     private val _trusted = MutableStateFlow(listOf("Mama", "Papa"))
     override val trustedContacts = _trusted.asStateFlow()
 
-    override fun addScan(result: ScanResult, source: MessageSource) {
+    override fun addScan(result: ScanResult, source: MessageSource): ScanRecord {
+        lateinit var record: ScanRecord
         _history.update { list ->
-            val record = ScanRecord(
+            record = ScanRecord(
                 id = (list.maxOfOrNull { it.id } ?: 0) + 1,
                 sender = result.sender ?: "—",
                 text = result.text,
@@ -57,10 +60,14 @@ class FakeScanRepository : ScanRepository {
                 verdict = result.verdict,
                 score = result.score,
                 timestamp = System.currentTimeMillis(),
+                result = result,
             )
             listOf(record) + list
         }
+        return record
     }
+
+    override fun find(id: Long): ScanRecord? = _history.value.firstOrNull { it.id == id }
 
     override fun addTrustedContact(sender: String) {
         val s = sender.trim()

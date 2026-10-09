@@ -40,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.sipatkilatis.R
 import com.example.sipatkilatis.ui.components.OfflineBadge
+import com.example.sipatkilatis.ui.components.PermissionCard
+import com.example.sipatkilatis.ui.components.rememberPermissionController
 import com.example.sipatkilatis.ui.components.SectionCard
 import com.example.sipatkilatis.ui.theme.ScamRed
 
@@ -71,6 +73,9 @@ fun HomeScreen(
             }
 
             ProtectionCard(protectionOn, onProtectionChange)
+
+            // Status of SMS / alert / chat-app permissions, each with a button to fix it
+            PermissionCard(rememberPermissionController())
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CounterCard(scannedCount.toString(), stringResource(R.string.home_scanned), Modifier.weight(1f))

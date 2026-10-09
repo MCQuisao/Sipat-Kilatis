@@ -18,4 +18,9 @@ class AppPreferences(context: Context) {
     var sensitivity: Sensitivity
         get() = Sensitivity.valueOf(prefs.getString("sensitivity", Sensitivity.NORMAL.name)!!)
         set(value) = prefs.edit().putString("sensitivity", value.name).apply()
+
+    /** "en" / "fil", or null = follow the phone. Kept here too so background alerts use the right language. */
+    var language: String?
+        get() = prefs.getString("language", null)
+        set(value) = prefs.edit().putString("language", value).apply()
 }

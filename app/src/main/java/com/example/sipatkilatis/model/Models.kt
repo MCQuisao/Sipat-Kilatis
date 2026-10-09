@@ -39,4 +39,5 @@ data class ScanRecord(
     val verdict: Verdict,
     val score: Float,
     val timestamp: Long,
+    val result: ScanResult? = null,   // full result, so History / alerts can reopen the Result screen
 )

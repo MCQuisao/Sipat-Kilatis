@@ -1,4 +1,4 @@
-﻿package com.example.sipatkilatis.ui.screens
+package com.example.sipatkilatis.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,15 +25,11 @@ import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,20 +41,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.sipatkilatis.R
 import com.example.sipatkilatis.ui.AppLanguage
+import com.example.sipatkilatis.ui.components.OnboardingPermissionButton
+import com.example.sipatkilatis.ui.components.PermissionController
+import com.example.sipatkilatis.ui.components.rememberPermissionController
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
 private const val PAGE_COUNT = 3
 
-/** 3 pages: what the app does, privacy promise, language + (placeholder) permissions. */
+/** 3 pages: what the app does, privacy promise, language + permissions for automatic checking. */
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
     val pager = rememberPagerState(pageCount = { PAGE_COUNT })
     val scope = rememberCoroutineScope()
-    val snackbar = remember { SnackbarHostState() }
-    val placeholderMsg = stringResource(R.string.perm_placeholder)
+    val permissions = rememberPermissionController()
     val isLast = pager.currentPage == PAGE_COUNT - 1
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+    Scaffold { padding ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -71,7 +70,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                 when (page) {
                     0 -> InfoPage(Icons.Filled.Shield, stringResource(R.string.onb_title_1), stringResource(R.string.onb_body_1))
                     1 -> InfoPage(Icons.Filled.Lock, stringResource(R.string.onb_title_2), stringResource(R.string.onb_body_2))
-                    else -> LanguagePage(onPermissionClick = { scope.launch { snackbar.showSnackbar(placeholderMsg) } })
+                    else -> LanguagePage(permissions)
                 }
             }
             PageDots(current = pager.currentPage)
@@ -107,7 +106,8 @@ private fun InfoPage(icon: ImageVector, title: String, body: String) {
 }
 
 @Composable
-private fun LanguagePage(onPermissionClick: () -> Unit) {
+private fun LanguagePage(permissions: PermissionController) {
+    val context = LocalContext.current
     val current = AppLanguage.current()
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp),
@@ -117,15 +117,18 @@ private fun LanguagePage(onPermissionClick: () -> Unit) {
         Text(stringResource(R.string.onb_body_3), style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
-        LanguageOption(stringResource(R.string.lang_filipino), current == AppLanguage.FILIPINO) { AppLanguage.set(AppLanguage.FILIPINO) }
-        LanguageOption(stringResource(R.string.lang_english), current == AppLanguage.ENGLISH) { AppLanguage.set(AppLanguage.ENGLISH) }
+        LanguageOption(stringResource(R.string.lang_filipino), current == AppLanguage.FILIPINO) { AppLanguage.set(context, AppLanguage.FILIPINO) }
+        LanguageOption(stringResource(R.string.lang_english), current == AppLanguage.ENGLISH) { AppLanguage.set(context, AppLanguage.ENGLISH) }
 
         Spacer(Modifier.height(28.dp))
         Text(stringResource(R.string.onb_perm_title), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
-        // Placeholders: real runtime permission requests are added in phase 5.
-        PermissionButton(Icons.Filled.Sms, stringResource(R.string.onb_perm_sms), onPermissionClick)
-        PermissionButton(Icons.AutoMirrored.Filled.Chat, stringResource(R.string.onb_perm_notif), onPermissionClick)
+        val s = permissions.status
+        OnboardingPermissionButton(Icons.Filled.Sms, stringResource(R.string.onb_perm_sms), s.sms && s.alerts) {
+            if (!s.sms) permissions.requestSms() else permissions.requestAlerts()
+        }
+        OnboardingPermissionButton(Icons.AutoMirrored.Filled.Chat, stringResource(R.string.onb_perm_notif), s.chatApps,
+            permissions.openChatAccess)
         Text(stringResource(R.string.onb_perm_later), style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -143,15 +146,6 @@ fun LanguageOption(label: String, selected: Boolean, onClick: () -> Unit) {
         RadioButton(selected = selected, onClick = null)
         Spacer(Modifier.size(12.dp))
         Text(label, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-private fun PermissionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Icon(icon, contentDescription = null)
-        Spacer(Modifier.size(8.dp))
-        Text(label, modifier = Modifier.weight(1f))
     }
 }
 

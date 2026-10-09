@@ -32,12 +32,21 @@ object Routes {
 fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController()) {
     val onboardingDone by vm.onboardingDone.collectAsStateWithLifecycle()
     val pendingShare by vm.pendingShare.collectAsStateWithLifecycle()
+    val pendingResult by vm.pendingResult.collectAsStateWithLifecycle()
 
     // Text shared from another app -> open the Check screen with it filled in
     LaunchedEffect(pendingShare, onboardingDone) {
         if (pendingShare && onboardingDone) {
             nav.navigate(Routes.CHECK) { launchSingleTop = true }
             vm.shareHandled()
+        }
+    }
+
+    // Scam alert tapped -> show that scan's result
+    LaunchedEffect(pendingResult, onboardingDone) {
+        if (pendingResult && onboardingDone) {
+            nav.navigate(Routes.RESULT) { launchSingleTop = true }
+            vm.resultHandled()
         }
     }
 
@@ -88,7 +97,11 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
         }
         composable(Routes.HISTORY) {
             val history by vm.history.collectAsStateWithLifecycle()
-            HistoryScreen(history = history, onBack = { nav.popBackStack() })
+            HistoryScreen(
+                history = history,
+                onOpen = { id -> if (vm.openScan(id)) nav.navigate(Routes.RESULT) },
+                onBack = { nav.popBackStack() },
+            )
         }
         composable(Routes.GUIDE) {
             ScamGuideScreen(onBack = { nav.popBackStack() })

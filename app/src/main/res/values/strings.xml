@@ -27,7 +27,6 @@
     <string name="onb_next">Next</string>
     <string name="onb_skip">Skip</string>
     <string name="onb_start">Get started</string>
-    <string name="perm_placeholder">Permission requests are added in a later update.</string>
 
     <!-- Home -->
     <string name="home_protection_on">Protection is on</string>
@@ -140,4 +139,33 @@
     <string name="settings_privacy">Privacy</string>
     <string name="settings_privacy_body">Everything is checked on your phone, even in airplane mode. Your messages never leave your phone.</string>
     <string name="settings_version">Version %1$s</string>
+
+    <!-- Alerts (notifications) -->
+    <string name="channel_scam">Scam alerts</string>
+    <string name="channel_scam_desc">Pop-up warning when a message looks like a scam</string>
+    <string name="channel_suspicious">Suspicious messages</string>
+    <string name="channel_suspicious_desc">Quiet notice for messages that might be risky</string>
+    <string name="alert_scam_title">Possible scam detected</string>
+    <string name="alert_suspicious_title">Suspicious message</string>
+    <string name="alert_from">From %1$s</string>
+    <string name="alert_generic_reason">This message has signs of a scam.</string>
+    <string name="alert_view">View details</string>
+    <string name="alert_mark_safe">Mark as safe</string>
+    <string name="alert_marked_safe">Sender added to trusted contacts</string>
+
+    <!-- Permissions -->
+    <string name="perm_sms">SMS screening</string>
+    <string name="perm_sms_why">Checks new texts the moment they arrive.</string>
+    <string name="perm_alerts">Scam alerts</string>
+    <string name="perm_alerts_why">Warns you right away when a scam arrives.</string>
+    <string name="perm_chat">Chat app screening</string>
+    <string name="perm_chat_why">Messenger, Viber, Telegram, WhatsApp, GCash, Maya.</string>
+    <string name="perm_on">On</string>
+    <string name="perm_turn_on">Turn on</string>
+    <string name="perm_all_on">All automatic checks are on.</string>
+    <string name="perm_chat_dialog_title">Allow chat app screening</string>
+    <string name="perm_chat_dialog_body">On the next screen, turn on Sipat Kilatis. This lets the app read new message notifications from Messenger, Viber, Telegram, WhatsApp, GCash, Maya, and your SMS app, and check them for scams.\n\nYour messages never leave your phone. They are checked here and never uploaded.</string>
+    <string name="perm_open_settings">Open settings</string>
+    <string name="perm_xiaomi">Xiaomi, Redmi, or POCO phone: in App settings, turn on Autostart and set Battery saver to \"No restrictions\" so checking keeps working in the background.</string>
+    <string name="perm_xiaomi_button">Open app settings</string>
 </resources>

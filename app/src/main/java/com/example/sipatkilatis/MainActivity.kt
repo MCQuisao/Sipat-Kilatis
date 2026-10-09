@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationManagerCompat
+import com.example.sipatkilatis.capture.ScamAlerts
 import com.example.sipatkilatis.ui.AppNavHost
 import com.example.sipatkilatis.ui.MainViewModel
 import com.example.sipatkilatis.ui.theme.SipatKilatisTheme
@@ -34,10 +36,18 @@ class MainActivity : AppCompatActivity() {
         handleShareIntent(intent)
     }
 
-    /** "Share → Sipat Kilatis" from any messaging app puts the text into the Check screen. */
+    /**
+     * "Share → Sipat Kilatis" from any messaging app puts the text into the Check screen.
+     * Tapping a scam alert ("View details") opens that scan's Result screen.
+     */
     private fun handleShareIntent(intent: Intent?) {
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
             intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let(vm::onSharedText)
+        }
+        val scanId = intent?.getLongExtra(ScamAlerts.EXTRA_SCAN_ID, -1L) ?: -1L
+        if (scanId >= 0) {
+            vm.openScan(scanId, fromAlert = true)
+            NotificationManagerCompat.from(this).cancel(scanId.toInt())
         }
     }
 }

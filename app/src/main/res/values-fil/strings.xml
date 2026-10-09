@@ -27,7 +27,6 @@
     <string name="onb_next">Susunod</string>
     <string name="onb_skip">Laktawan</string>
     <string name="onb_start">Magsimula</string>
-    <string name="perm_placeholder">Idadagdag ang paghingi ng pahintulot sa susunod na update.</string>
 
     <!-- Home -->
     <string name="home_protection_on">Naka-on ang proteksyon</string>
@@ -140,4 +139,33 @@
     <string name="settings_privacy">Privacy</string>
     <string name="settings_privacy_body">Sa phone mo sinusuri ang lahat, kahit naka-airplane mode. Hindi umaalis sa phone mo ang mga mensahe mo.</string>
     <string name="settings_version">Bersyon %1$s</string>
+
+    <!-- Alerts (notifications) -->
+    <string name="channel_scam">Mga babala sa scam</string>
+    <string name="channel_scam_desc">Pop-up na babala kapag mukhang scam ang mensahe</string>
+    <string name="channel_suspicious">Kahina-hinalang mensahe</string>
+    <string name="channel_suspicious_desc">Tahimik na abiso para sa mensaheng posibleng delikado</string>
+    <string name="alert_scam_title">Posibleng scam</string>
+    <string name="alert_suspicious_title">Kahina-hinalang mensahe</string>
+    <string name="alert_from">Mula kay %1$s</string>
+    <string name="alert_generic_reason">May senyales ng scam ang mensaheng ito.</string>
+    <string name="alert_view">Tingnan</string>
+    <string name="alert_mark_safe">Ligtas ito</string>
+    <string name="alert_marked_safe">Naidagdag sa mga pinagkakatiwalaang contact</string>
+
+    <!-- Permissions -->
+    <string name="perm_sms">Pagsusuri ng SMS</string>
+    <string name="perm_sms_why">Sinusuri ang bagong text pagkadating nito.</string>
+    <string name="perm_alerts">Mga babala sa scam</string>
+    <string name="perm_alerts_why">Agad kang binabalaan kapag may dumating na scam.</string>
+    <string name="perm_chat">Pagsusuri ng chat app</string>
+    <string name="perm_chat_why">Messenger, Viber, Telegram, WhatsApp, GCash, Maya.</string>
+    <string name="perm_on">Naka-on</string>
+    <string name="perm_turn_on">I-on</string>
+    <string name="perm_all_on">Naka-on ang lahat ng awtomatikong pagsusuri.</string>
+    <string name="perm_chat_dialog_title">Payagan ang pagsusuri ng chat app</string>
+    <string name="perm_chat_dialog_body">Sa susunod na screen, i-on ang Sipat Kilatis. Dahil dito, mababasa ng app ang mga bagong notification ng mensahe mula sa Messenger, Viber, Telegram, WhatsApp, GCash, Maya, at SMS app mo para masuri kung scam.\n\nHindi umaalis sa phone mo ang mga mensahe mo. Dito sila sinusuri at hindi kailanman ina-upload.</string>
+    <string name="perm_open_settings">Buksan ang settings</string>
+    <string name="perm_xiaomi">Xiaomi, Redmi, o POCO na phone: sa App settings, i-on ang Autostart at gawing \"No restrictions\" ang Battery saver para tuloy-tuloy ang pagsusuri kahit nasa background.</string>
+    <string name="perm_xiaomi_button">Buksan ang app settings</string>
 </resources>

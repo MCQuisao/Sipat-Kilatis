@@ -22,8 +22,11 @@ interface RulesEngine {
     fun check(input: PreprocessedText): CheckResult
 }
 
-/** Offline URL checks. [blocklisted] = a link is on the known scam list (forces score >= 0.9). */
-data class UrlCheckResult(val result: CheckResult, val blocklisted: Boolean)
+/**
+ * Offline URL checks. [blocklisted] = a link is on the known scam list (forces score >= 0.9).
+ * [allOfficial] = the message has links and ALL of them go to official sites (gcash.com, lazada.com.ph, zoom.us...).
+ */
+data class UrlCheckResult(val result: CheckResult, val blocklisted: Boolean, val allOfficial: Boolean = false)
 
 interface UrlChecker {
     fun check(input: PreprocessedText): UrlCheckResult

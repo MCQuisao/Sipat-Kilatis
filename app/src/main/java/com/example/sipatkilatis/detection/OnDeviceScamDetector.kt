@@ -31,6 +31,7 @@ class OnDeviceScamDetector(
 
         // 1. Trusted contacts are never flagged
         if (sender != null && isTrusted(sender)) {
+            Log.d("SipatKilatis", "detect: trusted sender -> SAFE (not scanned)")
             return@withContext ScanResult(text, sender, Verdict.SAFE, 0f, 0f, 0f, 0f,
                 listOf(Flag("trusted", "Sender is in your trusted contacts", "Nasa pinagkakatiwalaang contact mo ang nagpadala")),
                 emptyList())
@@ -45,7 +46,7 @@ class OnDeviceScamDetector(
         val mlMs = (System.nanoTime() - mlStart) / 1_000_000
 
         // 3. Combine
-        val score = RiskScorer.score(m, u.result.score, r.score, u.blocklisted)
+        val score = RiskScorer.score(m, u.result.score, r.score, u.blocklisted, u.allOfficial)
         val verdict = RiskScorer.verdict(score, sensitivity())
         val flags = buildList {
             addAll(u.result.flags)
@@ -55,7 +56,7 @@ class OnDeviceScamDetector(
                 add(Flag("ml", "The on-device AI finds this similar to known scam messages ($pct%)",
                     "Kahawig ito ng mga kilalang scam ayon sa AI sa phone mo ($pct%)"))
             }
-        }
+        }.sortedBy { FLAG_PRIORITY.indexOf(it.id).let { i -> if (i < 0) FLAG_PRIORITY.size else i } }
 
         val totalMs = (System.nanoTime() - start) / 1_000_000
         val (t, b) = ml.lastParts
@@ -83,6 +84,15 @@ class OnDeviceScamDetector(
             c.equals(sender.trim(), ignoreCase = true) ||
                 (digits.length >= 7 && c.filter { it.isDigit() }.takeLast(10) == digits)
         }
+    }
+
+    companion object {
+        /** Most telling warning first: the alert shows only the first one, the Result screen lists them all. */
+        private val FLAG_PRIORITY = listOf(
+            "url_blocklist", "url_lookalike", "otp", "credentials", "prize", "locked", "delivery_fee", "send_money",
+            "loan", "job", "gov_aid", "gambling", "url_ip", "verify", "threat", "url_short", "url_tld",
+            "click_link", "urgency", "ml",
+        )
     }
 
     private fun loadBlocklist(context: Context): Set<String> = runCatching {

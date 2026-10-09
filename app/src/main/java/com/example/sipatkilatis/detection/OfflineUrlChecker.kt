@@ -19,6 +19,10 @@ class OfflineUrlChecker(private val blocklist: Set<String>) : UrlChecker {
         "sss.gov.ph", "philhealth.gov.ph", "pagibigfund.gov.ph", "dswd.gov.ph", "gov.ph",
     )
 
+    // Meeting links people really send each other. Deliberately NOT all of google.com / facebook.com:
+    // anyone can publish there, and fake Facebook pages and Google Forms phishing pages are common scams.
+    private val trustedMeetingLinks = listOf("zoom.us", "meet.google.com", "teams.microsoft.com", "teams.live.com")
+
     // Brand names scammers put into fake domains (gcash-verify.xyz, bdo-secure-ph.com, lazada-promo.top)
     private val brands = listOf(
         "gcash", "maya", "paymaya", "bdo", "bpi", "metrobank", "landbank", "unionbank", "securitybank", "rcbc",
@@ -79,7 +83,10 @@ class OfflineUrlChecker(private val blocklist: Set<String>) : UrlChecker {
             if (s > 0f) ranges += url.range
             score = maxOf(score, s)
         }
-        return UrlCheckResult(CheckResult(score, flags.values.toList(), ranges), blocklisted)
+        // Every link goes to an official brand site or a known meeting service -> the risk scorer may cap the score
+        val allOfficial = input.urls.isNotEmpty() && !blocklisted &&
+            input.urls.all { inList(hostOf(it.value), official + trustedMeetingLinks) }
+        return UrlCheckResult(CheckResult(score, flags.values.toList(), ranges), blocklisted, allOfficial)
     }
 
     /** "https://www.Gcash-Verify.xyz/login?x=1" -> "gcash-verify.xyz" */
