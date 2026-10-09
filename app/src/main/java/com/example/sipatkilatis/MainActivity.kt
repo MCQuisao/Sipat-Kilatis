@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationManagerCompat
+import com.example.sipatkilatis.capture.MessageNotificationListener
 import com.example.sipatkilatis.capture.ScamAlerts
 import com.example.sipatkilatis.ui.AppNavHost
 import com.example.sipatkilatis.ui.MainViewModel
@@ -28,6 +29,12 @@ class MainActivity : AppCompatActivity() {
                 AppNavHost(vm)
             }
         }
+    }
+
+    // Coming back to the app (e.g. from Settings): make sure chat-app screening is really connected
+    override fun onResume() {
+        super.onResume()
+        MessageNotificationListener.ensureConnected(this)
     }
 
     // Activity is singleTop: a share while the app is open arrives here

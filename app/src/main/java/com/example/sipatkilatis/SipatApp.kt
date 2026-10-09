@@ -2,6 +2,7 @@ package com.example.sipatkilatis
 
 import android.app.Application
 import android.content.Context
+import com.example.sipatkilatis.capture.MessageNotificationListener
 import com.example.sipatkilatis.capture.MessageScreener
 import com.example.sipatkilatis.capture.ScamAlerts
 import com.example.sipatkilatis.data.AppPreferences
@@ -49,6 +50,7 @@ class SipatApp : Application() {
         super.onCreate()
         graph = AppGraph(this)
         graph.alerts.createChannels()
+        MessageNotificationListener.ensureConnected(this)   // MIUI may not reconnect it after an app update
         // Load the ONNX models in the background so the first scan (manual or incoming SMS) is fast
         graph.appScope.launch { graph.detector.warmUp() }
     }

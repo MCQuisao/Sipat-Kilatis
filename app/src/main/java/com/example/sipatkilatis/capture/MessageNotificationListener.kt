@@ -1,6 +1,11 @@
 package com.example.sipatkilatis.capture
 
 import android.app.Notification
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.provider.Telephony
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -20,8 +25,50 @@ import kotlinx.coroutines.launch
  */
 class MessageNotificationListener : NotificationListenerService() {
 
-    private companion object {
-        const val MAX_AGE_MS = 2 * 60 * 1000L
+    companion object {
+        private const val MAX_AGE_MS = 2 * 60 * 1000L
+        private const val TAG = "SipatKilatis"
+
+        /** True while Android has this listener connected (it can be ON in Settings yet not connected). */
+        @Volatile var connected = false
+            private set
+
+        /**
+         * Notification access can be ON in Settings while the listener is NOT connected: Android disconnects it
+         * when the app is updated, and some phones (seen on Xiaomi / MIUI) never reconnect it, so chat apps stop
+         * being screened. Ask Android to reconnect; if that is ignored, briefly disable + re-enable the component,
+         * which makes the system bind it again. Call on app start and whenever the app comes to the foreground.
+         */
+        @Volatile private var checking = false   // one reconnect attempt at a time
+
+        fun ensureConnected(context: Context) {
+            if (checking || connected) return
+            checking = true
+            val app = context.applicationContext
+            val handler = Handler(Looper.getMainLooper())
+            // Give a normal bind (e.g. right after the app process starts) a moment before stepping in
+            handler.postDelayed({ checkAndRebind(app, handler) }, 2_000)
+        }
+
+        private fun checkAndRebind(context: Context, handler: Handler) {
+            if (connected || !Permissions.hasChatAccess(context)) { checking = false; return }
+            val component = ComponentName(context, MessageNotificationListener::class.java)
+            Log.d(TAG, "notification access is on but the listener is not connected: requesting rebind")
+            runCatching { requestRebind(component) }
+            handler.postDelayed({
+                checking = false
+                if (connected) return@postDelayed
+                Log.d(TAG, "rebind ignored: toggling the listener component")
+                val pm = context.packageManager
+                runCatching {
+                    pm.setComponentEnabledSetting(component, PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP)
+                    pm.setComponentEnabledSetting(component, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                        PackageManager.DONT_KILL_APP)
+                    requestRebind(component)
+                }.onFailure { Log.e(TAG, "could not reconnect the notification listener", it) }
+            }, 3_000)
+        }
     }
 
     private val watchedApps = setOf(
@@ -39,23 +86,37 @@ class MessageNotificationListener : NotificationListenerService() {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>) = size > 300
     }
 
+    override fun onListenerConnected() {
+        connected = true
+        Log.d(TAG, "notification listener connected")
+    }
+
+    override fun onListenerDisconnected() {
+        connected = false
+        Log.d(TAG, "notification listener DISCONNECTED")
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName
         if (pkg == packageName) return                                      // skip our own alerts
         val defaultSms = Telephony.Sms.getDefaultSmsPackage(this)
         if (pkg !in watchedApps && pkg != defaultSms) return
         val n = sbn.notification
-        if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return       // "3 new messages" summaries
-        if (n.flags and Notification.FLAG_ONGOING_EVENT != 0) return        // calls, uploads, etc.
+        // Diagnostics: app name + decision only, never the message text
+        fun skip(reason: String) { Log.d(TAG, "notification from $pkg: skipped ($reason)") }
+        if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return skip("group summary")
+        if (n.flags and Notification.FLAG_ONGOING_EVENT != 0) return skip("ongoing")
         // Old messages re-posted by the app (e.g. after a reboot) are not new: they were screened already
-        if (n.`when` > 0 && System.currentTimeMillis() - n.`when` > MAX_AGE_MS) return
+        val ageMs = System.currentTimeMillis() - n.`when`
+        if (n.`when` > 0 && ageMs > MAX_AGE_MS) return skip("old message, ${ageMs / 1000} s")
 
-        val (sender, text) = extract(n) ?: return
+        val (sender, text) = extract(n) ?: return skip("no message text")
         synchronized(seen) {
             val key = "${sbn.key}|${text.hashCode()}"
-            if (seen.containsKey(key)) return
+            if (seen.containsKey(key)) return skip("already screened")
             seen[key] = true
         }
+        Log.d(TAG, "notification from $pkg: screening")
         val graph = applicationContext.graph
         graph.appScope.launch {
             runCatching { graph.screener.screen(sender, text, MessageSource.NOTIFICATION) }
