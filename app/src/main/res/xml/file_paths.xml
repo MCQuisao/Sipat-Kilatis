@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the exported reports folder is shareable (for "Export my reports") -->
+<paths>
+    <cache-path name="exports" path="exports/" />
+</paths>

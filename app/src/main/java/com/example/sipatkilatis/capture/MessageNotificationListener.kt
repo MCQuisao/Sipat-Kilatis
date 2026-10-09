@@ -20,6 +20,10 @@ import kotlinx.coroutines.launch
  */
 class MessageNotificationListener : NotificationListenerService() {
 
+    private companion object {
+        const val MAX_AGE_MS = 2 * 60 * 1000L
+    }
+
     private val watchedApps = setOf(
         "com.facebook.orca",            // Messenger
         "com.facebook.mlite",           // Messenger Lite
@@ -43,6 +47,8 @@ class MessageNotificationListener : NotificationListenerService() {
         val n = sbn.notification
         if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return       // "3 new messages" summaries
         if (n.flags and Notification.FLAG_ONGOING_EVENT != 0) return        // calls, uploads, etc.
+        // Old messages re-posted by the app (e.g. after a reboot) are not new: they were screened already
+        if (n.`when` > 0 && System.currentTimeMillis() - n.`when` > MAX_AGE_MS) return
 
         val (sender, text) = extract(n) ?: return
         synchronized(seen) {

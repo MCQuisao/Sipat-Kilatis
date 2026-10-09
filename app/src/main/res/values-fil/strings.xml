@@ -177,4 +177,22 @@
     <string name="settings_ai_desc">Isang maliit na AI sa phone mo ang nagpapaliwanag ng kahina-hinala at scam na mensahe sa simpleng salita. Gumagana kahit offline.</string>
     <string name="settings_ai_installed">Naka-install ang AI model (%1$d MB)</string>
     <string name="settings_ai_missing">Hindi naka-install ang AI model. Simpleng paliwanag ang gagamitin.</string>
+    <!-- Phase 7: database, feedback, export -->
+    <string name="delete">Burahin</string>
+    <string name="result_feedback_title">Tama ba ito?</string>
+    <string name="result_mark_safe">Ligtas ito</string>
+    <string name="result_report">I-report na scam</string>
+    <string name="result_marked_safe">Minarkahang ligtas. Naidagdag ang nagpadala sa mga pinagkakatiwalaang contact mo.</string>
+    <string name="result_marked_safe_no_sender">Minarkahang ligtas.</string>
+    <string name="result_reported">Na-report. Sa phone mo lang ito naka-save.</string>
+    <string name="history_search">Maghanap ng mensahe</string>
+    <string name="settings_data">Ang iyong data</string>
+    <string name="settings_data_desc">Sa phone na ito lang naka-save ang kasaysayan at mga report.</string>
+    <string name="settings_export">I-export ang mga report ko</string>
+    <string name="settings_export_desc">Sine-save bilang file ang mga mensaheng ni-report o minarkahan mong ligtas, nakatago ang mga numero at pangalan. Ikaw ang pipili kung saan ito ibabahagi.</string>
+    <string name="settings_export_none">Wala pang report. Gamitin muna ang \"I-report na scam\" o \"Ligtas ito\" sa isang resulta.</string>
+    <string name="settings_clear">Burahin ang kasaysayan</string>
+    <string name="settings_clear_confirm_title">Burahin ang buong kasaysayan?</string>
+    <string name="settings_clear_confirm_body">Buburahin nito ang lahat ng nasuring mensahe at report sa phone na ito. Mananatili ang mga pinagkakatiwalaang contact.</string>
+    <string name="settings_clear_done">Nabura na ang kasaysayan</string>
 </resources>

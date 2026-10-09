@@ -177,4 +177,22 @@
     <string name="settings_ai_desc">A small AI on your phone explains suspicious and scam messages in plain words. Works offline.</string>
     <string name="settings_ai_installed">AI model installed (%1$d MB)</string>
     <string name="settings_ai_missing">AI model not installed. Simple explanations are used instead.</string>
+    <!-- Phase 7: database, feedback, export -->
+    <string name="delete">Delete</string>
+    <string name="result_feedback_title">Is this right?</string>
+    <string name="result_mark_safe">Mark as safe</string>
+    <string name="result_report">Report scam</string>
+    <string name="result_marked_safe">Marked as safe. The sender was added to your trusted contacts.</string>
+    <string name="result_marked_safe_no_sender">Marked as safe.</string>
+    <string name="result_reported">Reported. Saved on your phone only.</string>
+    <string name="history_search">Search messages</string>
+    <string name="settings_data">Your data</string>
+    <string name="settings_data_desc">Scan history and reports are saved only on this phone.</string>
+    <string name="settings_export">Export my reports</string>
+    <string name="settings_export_desc">Saves the messages you reported or marked safe as a file, with numbers and names hidden. You choose where to share it.</string>
+    <string name="settings_export_none">No reports yet. Use \"Report scam\" or \"Mark as safe\" on a result first.</string>
+    <string name="settings_clear">Clear history</string>
+    <string name="settings_clear_confirm_title">Clear all history?</string>
+    <string name="settings_clear_confirm_body">This deletes all scanned messages and reports from this phone. Trusted contacts are kept.</string>
+    <string name="settings_clear_done">History cleared</string>
 </resources>

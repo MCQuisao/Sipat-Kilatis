@@ -1,5 +1,6 @@
 package com.example.sipatkilatis.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,8 +12,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
@@ -60,14 +62,19 @@ fun SettingsScreen(
     llmSizeMb: Int,
     onSensitivityChange: (Sensitivity) -> Unit,
     onAiExplanationsChange: (Boolean) -> Unit,
+    onExport: (onReady: (Intent?) -> Unit) -> Unit,
+    onClearHistory: () -> Unit,
     onAddContact: (String) -> Unit,
     onRemoveContact: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val updateMsg = stringResource(R.string.settings_update_placeholder)
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var showClearDialog by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val noReportsMsg = stringResource(R.string.settings_export_none)
+    val clearedMsg = stringResource(R.string.settings_clear_done)
 
     Scaffold(
         topBar = { AppTopBar(stringResource(R.string.settings_title), onBack) },
@@ -149,15 +156,28 @@ fun SettingsScreen(
                 }
             }
 
-            SectionCard(title = stringResource(R.string.settings_update)) {
-                Text(stringResource(R.string.settings_update_desc), style = MaterialTheme.typography.bodyMedium,
+            // History + reports live only in the on-device database
+            SectionCard(title = stringResource(R.string.settings_data)) {
+                Text(stringResource(R.string.settings_data_desc), style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                // Placeholder: the optional online blocklist update is built in phase 7.
-                OutlinedButton(onClick = { scope.launch { snackbar.showSnackbar(updateMsg) } },
-                    modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.CloudDownload, contentDescription = null)
+                Text(stringResource(R.string.settings_export_desc), style = MaterialTheme.typography.bodyMedium)
+                OutlinedButton(
+                    onClick = {
+                        onExport { intent ->
+                            if (intent != null) context.startActivity(intent)
+                            else scope.launch { snackbar.showSnackbar(noReportsMsg) }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.IosShare, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.settings_update))
+                    Text(stringResource(R.string.settings_export))
+                }
+                OutlinedButton(onClick = { showClearDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Filled.DeleteSweep, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_clear))
                 }
             }
 
@@ -168,6 +188,22 @@ fun SettingsScreen(
             Text(stringResource(R.string.settings_version, appVersion()), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
+    }
+
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_clear_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showClearDialog = false
+                    onClearHistory()
+                    scope.launch { snackbar.showSnackbar(clearedMsg) }
+                }) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = { TextButton(onClick = { showClearDialog = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 
     if (showAddDialog) {

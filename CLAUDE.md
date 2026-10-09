@@ -48,8 +48,14 @@ SipatKilatis/
   heads-up, SUSPICIOUS = default, SAFE = none; "View details" / "Mark as safe"; system "Open link" smart actions OFF).
 - Test SMS on the emulator: `adb -s emulator-5554 emu sms send 09171234567 "message"`. A force-stopped app gets no
   SMS broadcasts until it is opened again (Android rule), so test by opening the app once, then pressing Home.
-- Placeholders to replace: `FakeScanRepository` → Room (phase 7; history resets when the process dies),
-  online update button (phase 7).
+- Storage (phase 7): Room database `sipat_kilatis.db` (`data/db/AppDatabase.kt`): `scans` (with `userFeedback`)
+  and `trusted_contacts`, via `RoomScanRepository`. The detector reads trusted contacts straight from the DB
+  (`trustedNow()`), so a cold start by an incoming SMS still sees them. "Export my reports" = masked CSV
+  (`ReportExporter`) shared through the share sheet + FileProvider; nothing is sent automatically.
+- The optional online blocklist update was deliberately SKIPPED: the app has no internet permission at all.
+  The blocklist updates only with a new APK.
+- The notification listener ignores notifications about messages older than 2 minutes (apps re-post old
+  unread notifications after a reboot; they were screened already).
 - Strings: English in `res/values/`, Filipino in `res/values-fil/` (tag `fil`). Every user-facing string goes in both.
 - Build from a terminal: `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; .\gradlew.bat assembleDebug`.
 

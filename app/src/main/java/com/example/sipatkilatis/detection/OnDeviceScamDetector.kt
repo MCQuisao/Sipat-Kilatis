@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 class OnDeviceScamDetector(
     context: Context,
     private val sensitivity: () -> Sensitivity,
-    private val trustedContacts: () -> List<String>,
+    private val trustedContacts: suspend () -> List<String>,
 ) : ScamDetector {
     private val appContext = context.applicationContext
     private val rules: RulesEngine = RegexRulesEngine()
@@ -78,7 +78,7 @@ class OnDeviceScamDetector(
     }
 
     /** Match by name (case-insensitive) or by the last 10 digits of a phone number. */
-    private fun isTrusted(sender: String): Boolean {
+    private suspend fun isTrusted(sender: String): Boolean {
         val digits = sender.filter { it.isDigit() }.takeLast(10)
         return trustedContacts().any { c ->
             c.equals(sender.trim(), ignoreCase = true) ||

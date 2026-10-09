@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.sipatkilatis.R
+import com.example.sipatkilatis.model.Feedback
+import com.example.sipatkilatis.model.ScanRecord
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Verdict
 import com.example.sipatkilatis.ui.AppLanguage
@@ -42,6 +44,8 @@ import com.example.sipatkilatis.ui.components.RiskBar
 import com.example.sipatkilatis.ui.components.SectionCard
 import com.example.sipatkilatis.ui.components.VerdictChip
 import com.example.sipatkilatis.ui.components.verdictIcon
+import com.example.sipatkilatis.ui.theme.SafeGreen
+import com.example.sipatkilatis.ui.theme.ScamRed
 import com.example.sipatkilatis.ui.theme.color
 import com.example.sipatkilatis.ui.theme.tint
 
@@ -49,7 +53,15 @@ private val OnTint = Color(0xFF15181E)   // dark text on the light verdict tints
 
 /** Verdict, risk bar, highlighted message, explanation, and what to do now. */
 @Composable
-fun ResultScreen(result: ScanResult, explanation: ExplanationUi, onScanAnother: () -> Unit, onBack: () -> Unit) {
+fun ResultScreen(
+    result: ScanResult,
+    explanation: ExplanationUi,
+    record: ScanRecord?,
+    onMarkSafe: () -> Unit,
+    onReport: () -> Unit,
+    onScanAnother: () -> Unit,
+    onBack: () -> Unit,
+) {
     val pct = { v: Float -> (v * 100).toInt() }
     Scaffold(topBar = { AppTopBar(stringResource(R.string.result_title), onBack) }) { padding ->
         Column(
@@ -126,6 +138,28 @@ fun ResultScreen(result: ScanResult, explanation: ExplanationUi, onScanAnother: 
                 val filipino = AppLanguage.current() == AppLanguage.FILIPINO
                 SectionCard(title = stringResource(R.string.result_signs)) {
                     result.flags.forEach { BulletItem(if (filipino) it.reasonFil else it.reasonEn) }
+                }
+            }
+
+            // Feedback: saved in the on-device database (and in "Export my reports")
+            if (record != null) {
+                SectionCard(title = stringResource(R.string.result_feedback_title)) {
+                    when (record.feedback) {
+                        Feedback.MARKED_SAFE -> Text(
+                            stringResource(if (record.result?.sender != null) R.string.result_marked_safe
+                                           else R.string.result_marked_safe_no_sender),
+                            style = MaterialTheme.typography.bodyLarge, color = SafeGreen)
+                        Feedback.REPORTED -> Text(stringResource(R.string.result_reported),
+                            style = MaterialTheme.typography.bodyLarge, color = ScamRed)
+                        Feedback.NONE -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(onClick = onMarkSafe, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.result_mark_safe))
+                            }
+                            OutlinedButton(onClick = onReport, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.result_report))
+                            }
+                        }
+                    }
                 }
             }
 

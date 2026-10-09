@@ -5,7 +5,8 @@ import android.content.Context
 import com.example.sipatkilatis.capture.MessageScreener
 import com.example.sipatkilatis.capture.ScamAlerts
 import com.example.sipatkilatis.data.AppPreferences
-import com.example.sipatkilatis.data.FakeScanRepository
+import com.example.sipatkilatis.data.RoomScanRepository
+import com.example.sipatkilatis.data.db.AppDatabase
 import com.example.sipatkilatis.data.ScanRepository
 import com.example.sipatkilatis.detection.LlmExplainer
 import com.example.sipatkilatis.detection.OnDeviceScamDetector
@@ -23,13 +24,14 @@ import kotlinx.coroutines.launch
 class AppGraph(context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val prefs = AppPreferences(context)
-    val repo: ScanRepository = FakeScanRepository()      // phase 7: Room
+    val db = AppDatabase.create(context)                 // on-device only
+    val repo: ScanRepository = RoomScanRepository(db, appScope)
 
     val protectionOn = MutableStateFlow(prefs.protectionOn)
     val sensitivity = MutableStateFlow(prefs.sensitivity)
 
     /** Real on-device engine; reads the current sensitivity and trusted contacts on every scan. */
-    val detector = OnDeviceScamDetector(context, { sensitivity.value }, { repo.trustedContacts.value })
+    val detector = OnDeviceScamDetector(context, { sensitivity.value }, { repo.trustedNow() })
     val alerts = ScamAlerts(context, prefs)
     val screener = MessageScreener(this)
 

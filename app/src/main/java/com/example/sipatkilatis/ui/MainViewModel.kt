@@ -1,21 +1,31 @@
 package com.example.sipatkilatis.ui
 
 import android.app.Application
+import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sipatkilatis.data.ReportExporter
 import com.example.sipatkilatis.detection.ExplanationSafety
 import com.example.sipatkilatis.detection.LlmExplainer
 import com.example.sipatkilatis.graph
+import com.example.sipatkilatis.model.Feedback
 import com.example.sipatkilatis.model.MessageSource
+import com.example.sipatkilatis.model.ScanRecord
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Sensitivity
 import com.example.sipatkilatis.model.Verdict
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -50,6 +60,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _lastResult = MutableStateFlow<ScanResult?>(null)
     val lastResult = _lastResult.asStateFlow()
 
+    /** The saved row of the result on screen, kept up to date (e.g. its feedback) from the database. */
+    private val _currentScanId = MutableStateFlow(-1L)
+    val currentRecord: StateFlow<ScanRecord?> = combine(repo.history, _currentScanId) { h, id -> h.firstOrNull { it.id == id } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     /** Explanation on the Result screen: template first, then (maybe) the local LLM's text, streamed. */
     private val _explanation = MutableStateFlow(ExplanationUi(""))
     val explanation = _explanation.asStateFlow()
@@ -65,7 +80,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Show a result and start its explanation. */
-    private fun showResult(result: ScanResult) {
+    private fun showResult(result: ScanResult, scanId: Long) {
+        _currentScanId.value = scanId
         _lastResult.value = result
         explain(result)
     }
@@ -145,12 +161,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _pendingShare.value = false
     }
 
-    /** Show a saved scan (from an alert or the History list). Returns false if it is no longer in memory. */
-    fun openScan(id: Long, fromAlert: Boolean = false): Boolean {
-        val result = repo.find(id)?.result ?: return false
-        showResult(result)
-        if (fromAlert) _pendingResult.value = true
-        return true
+    /** Show a saved scan (from an alert or the History list). [onOpened] runs once it is loaded. */
+    fun openScan(id: Long, fromAlert: Boolean = false, onOpened: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            val result = repo.find(id)?.result ?: return@launch
+            showResult(result, id)
+            if (fromAlert) _pendingResult.value = true
+            onOpened?.invoke()
+        }
     }
 
     fun resultHandled() {
@@ -164,15 +182,51 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _scanning.value = true
             val result = graph.detector.detect(text)
-            repo.addScan(result, MessageSource.MANUAL)
-            showResult(result)
+            val record = repo.addScan(result, MessageSource.MANUAL)
+            showResult(result, record.id)
             _scanning.value = false
             onDone()
         }
     }
 
-    fun addTrustedContact(sender: String) = repo.addTrustedContact(sender)
-    fun removeTrustedContact(sender: String) = repo.removeTrustedContact(sender)
+    // ---- Feedback on the scan shown on the Result screen (saved in the on-device database)
+
+    /** "Mark as safe": records the correction and trusts the sender (if there is one). */
+    fun markCurrentSafe() {
+        val record = currentRecord.value ?: return
+        viewModelScope.launch {
+            repo.setFeedback(record.id, Feedback.MARKED_SAFE)
+            repo.addTrustedContact(record.sender)
+        }
+    }
+
+    /** "Report scam": stored on the phone only; included in "Export my reports". */
+    fun reportCurrent() {
+        val record = currentRecord.value ?: return
+        viewModelScope.launch { repo.setFeedback(record.id, Feedback.REPORTED) }
+    }
+
+    /** Builds the masked CSV of reported / corrected scans; [onReady] gets a share-sheet intent, or null if none. */
+    fun exportReports(onReady: (Intent?) -> Unit) {
+        viewModelScope.launch {
+            val records = repo.withFeedback()
+            val intent = if (records.isEmpty()) null
+                else withContext(Dispatchers.IO) { ReportExporter.shareIntent(getApplication(), records) }
+            onReady(intent)
+        }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch { repo.clearHistory() }
+    }
+
+    fun addTrustedContact(sender: String) {
+        viewModelScope.launch { repo.addTrustedContact(sender) }
+    }
+
+    fun removeTrustedContact(sender: String) {
+        viewModelScope.launch { repo.removeTrustedContact(sender) }
+    }
 }
 
 /** What the Result screen's explanation card shows. */

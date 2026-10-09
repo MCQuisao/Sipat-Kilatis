@@ -30,6 +30,9 @@ data class ScanResult(
     val isPreview: Boolean = false,   // true while the real detection engine is not connected yet
 )
 
+/** The user's correction of a verdict. */
+enum class Feedback { NONE, MARKED_SAFE, REPORTED }
+
 /** One row in the scan history. */
 data class ScanRecord(
     val id: Long,
@@ -40,4 +43,5 @@ data class ScanRecord(
     val score: Float,
     val timestamp: Long,
     val result: ScanResult? = null,   // full result, so History / alerts can reopen the Result screen
+    val feedback: Feedback = Feedback.NONE,
 )

@@ -48,7 +48,7 @@ object Preprocessor {
     private val SPACES = Regex("""\s+""")
 
     // Philippine mobile numbers: 09171234567, +63 917 123 4567, 0917-123-4567
-    private val PHONE = Regex("""(\+?63|\b0)9\d{2}[\s-]?\d{3}[\s-]?\d{4}\b""")
+    private val PHONE = Regex("""(\+?63[\s-]?|\b0)9\d{2}[\s-]?\d{3}[\s-]?\d{4}\b""")
 
     // Peso amounts: P5,000  PHP 500  ₱1k  500 pesos  P50k
     private val AMOUNT = Regex(

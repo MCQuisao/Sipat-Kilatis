@@ -14,9 +14,11 @@ import com.example.sipatkilatis.MainActivity
 import com.example.sipatkilatis.R
 import com.example.sipatkilatis.data.AppPreferences
 import com.example.sipatkilatis.graph
+import com.example.sipatkilatis.model.Feedback
 import com.example.sipatkilatis.model.ScanRecord
 import com.example.sipatkilatis.model.Verdict
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /**
  * Warning notifications:
@@ -100,16 +102,25 @@ class ScamAlerts(private val context: Context, private val prefs: AppPreferences
     }
 }
 
-/** "Mark as safe" on an alert: trust the sender, dismiss the alert. */
+/** "Mark as safe" on an alert: trust the sender, record the correction, dismiss the alert. */
 class AlertActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ScamAlerts.ACTION_MARK_SAFE) return
         val id = intent.getLongExtra(ScamAlerts.EXTRA_SCAN_ID, -1)
-        val graph = context.graph
-        val record = graph.repo.find(id)
-        if (record != null && record.sender != "—") graph.repo.addTrustedContact(record.sender)
-        // Phase 7 also records this correction (user feedback) in the Room database
         NotificationManagerCompat.from(context).cancel(id.toInt())
+        val graph = context.graph
         Toast.makeText(graph.alerts.localized(), R.string.alert_marked_safe, Toast.LENGTH_SHORT).show()
+        val pending = goAsync()   // database work happens off the main thread
+        graph.appScope.launch {
+            try {
+                val record = graph.repo.find(id)
+                if (record != null) {
+                    graph.repo.addTrustedContact(record.sender)
+                    graph.repo.setFeedback(id, Feedback.MARKED_SAFE)
+                }
+            } finally {
+                pending.finish()
+            }
+        }
     }
 }

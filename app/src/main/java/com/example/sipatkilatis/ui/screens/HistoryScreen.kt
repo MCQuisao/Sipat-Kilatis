@@ -15,7 +15,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -46,10 +50,22 @@ import java.time.format.FormatStyle
 @Composable
 fun HistoryScreen(history: List<ScanRecord>, onOpen: (Long) -> Unit, onBack: () -> Unit) {
     var filter by rememberSaveable { mutableStateOf<Verdict?>(null) }   // null = all
-    val shown = if (filter == null) history else history.filter { it.verdict == filter }
+    var query by rememberSaveable { mutableStateOf("") }
+    val shown = history.filter { r ->
+        (filter == null || r.verdict == filter) &&
+            (query.isBlank() || r.text.contains(query, ignoreCase = true) || r.sender.contains(query, ignoreCase = true))
+    }
 
     Scaffold(topBar = { AppTopBar(stringResource(R.string.history_title), onBack) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text(stringResource(R.string.history_search)) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            )
             Row(
                 Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -81,8 +97,7 @@ private val dateFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIU
 
 @Composable
 private fun HistoryItem(record: ScanRecord, onClick: () -> Unit) {
-    // Sample rows have no saved result, so only real scans open the Result screen
-    SectionCard(modifier = if (record.result != null) Modifier.clickable(onClick = onClick) else Modifier) {
+    SectionCard(modifier = Modifier.clickable(onClick = onClick)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(record.sender, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f),
                 maxLines = 1, overflow = TextOverflow.Ellipsis)

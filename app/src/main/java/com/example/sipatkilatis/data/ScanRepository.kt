@@ -1,80 +1,108 @@
 package com.example.sipatkilatis.data
 
+import com.example.sipatkilatis.data.db.AppDatabase
+import com.example.sipatkilatis.data.db.ScanEntity
+import com.example.sipatkilatis.data.db.TrustedContactEntity
+import com.example.sipatkilatis.model.Feedback
+import com.example.sipatkilatis.model.Flag
 import com.example.sipatkilatis.model.MessageSource
 import com.example.sipatkilatis.model.ScanRecord
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Verdict
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import org.json.JSONArray
+import org.json.JSONObject
 
-/** Scan history and trusted contacts. */
+/** Scan history, feedback, and trusted contacts. */
 interface ScanRepository {
     val history: StateFlow<List<ScanRecord>>
     val trustedContacts: StateFlow<List<String>>
-    fun addScan(result: ScanResult, source: MessageSource): ScanRecord
-    fun find(id: Long): ScanRecord?
-    fun addTrustedContact(sender: String)
-    fun removeTrustedContact(sender: String)
+    suspend fun addScan(result: ScanResult, source: MessageSource): ScanRecord
+    suspend fun find(id: Long): ScanRecord?
+    suspend fun setFeedback(id: Long, feedback: Feedback)
+    suspend fun withFeedback(): List<ScanRecord>
+    suspend fun clearHistory()
+    suspend fun addTrustedContact(sender: String)
+    suspend fun removeTrustedContact(sender: String)
+    /** Read straight from the database (not the StateFlow, which may not have loaded yet at cold start). */
+    suspend fun trustedNow(): List<String>
 }
 
 /**
- * In-memory placeholder with sample data so the screens have something to show.
- * Shared by the UI and the background SMS / notification screening (one instance per app process).
- * Replaced by a Room-backed repository in phase 7 (history currently resets when the app process restarts).
+ * Room-backed repository: history and trusted contacts survive app restarts. Shared by the UI and the
+ * background SMS / notification screening. Everything stays in the app's private database file.
  */
-class FakeScanRepository : ScanRepository {
-    private val now = System.currentTimeMillis()
-    private val hour = 60 * 60 * 1000L
+class RoomScanRepository(db: AppDatabase, scope: CoroutineScope) : ScanRepository {
+    private val dao = db.scanDao()
 
-    private val _history = MutableStateFlow(
-        listOf(
-            ScanRecord(6, "GCash", "Your GCash account is locked. Verify within 24 hours: gcash-verify.xyz/login",
-                MessageSource.SMS, Verdict.SCAM, 0.94f, now - 1 * hour),
-            ScanRecord(5, "Mama", "Anak, uuwi ka ba mamaya? May ulam pa dito.",
-                MessageSource.SMS, Verdict.SAFE, 0.03f, now - 3 * hour),
-            ScanRecord(4, "+63 917 555 0142", "Congrats! Nanalo ka ng P50,000. I-claim agad sa bit.ly/claim-prize",
-                MessageSource.SMS, Verdict.SCAM, 0.97f, now - 20 * hour),
-            ScanRecord(3, "Messenger", "Hi! We're hiring. Earn P1,500 daily just liking videos. Message us now.",
-                MessageSource.NOTIFICATION, Verdict.SUSPICIOUS, 0.58f, now - 26 * hour),
-            ScanRecord(2, "LBC", "Your parcel is out for delivery today.",
-                MessageSource.SMS, Verdict.SAFE, 0.12f, now - 48 * hour),
-            ScanRecord(1, "J&T Express", "Parcel on hold. Pay delivery fee of PHP 150 at jnt-ph.top/pay",
-                MessageSource.MANUAL, Verdict.SCAM, 0.88f, now - 72 * hour),
-        )
-    )
-    override val history = _history.asStateFlow()
+    // Eagerly started so .value is always current (the detector reads trusted contacts on every scan)
+    override val history: StateFlow<List<ScanRecord>> =
+        dao.observeAll().map { rows -> rows.map { it.toRecord() } }
+            .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    private val _trusted = MutableStateFlow(listOf("Mama", "Papa"))
-    override val trustedContacts = _trusted.asStateFlow()
+    override val trustedContacts: StateFlow<List<String>> =
+        dao.observeTrusted().map { rows -> rows.map { it.sender } }
+            .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    override fun addScan(result: ScanResult, source: MessageSource): ScanRecord {
-        lateinit var record: ScanRecord
-        _history.update { list ->
-            record = ScanRecord(
-                id = (list.maxOfOrNull { it.id } ?: 0) + 1,
-                sender = result.sender ?: "—",
-                text = result.text,
-                source = source,
-                verdict = result.verdict,
-                score = result.score,
-                timestamp = System.currentTimeMillis(),
-                result = result,
-            )
-            listOf(record) + list
-        }
-        return record
+    override suspend fun addScan(result: ScanResult, source: MessageSource): ScanRecord {
+        val entity = result.toEntity(source)
+        return entity.copy(id = dao.insert(entity)).toRecord()
     }
 
-    override fun find(id: Long): ScanRecord? = _history.value.firstOrNull { it.id == id }
+    override suspend fun find(id: Long): ScanRecord? = dao.get(id)?.toRecord()
 
-    override fun addTrustedContact(sender: String) {
+    override suspend fun setFeedback(id: Long, feedback: Feedback) = dao.setFeedback(id, feedback.name)
+
+    override suspend fun withFeedback(): List<ScanRecord> = dao.withFeedback().map { it.toRecord() }
+
+    override suspend fun clearHistory() = dao.clear()
+
+    override suspend fun addTrustedContact(sender: String) {
         val s = sender.trim()
-        if (s.isNotEmpty()) _trusted.update { if (s in it) it else it + s }
+        if (s.isNotEmpty() && s != NO_SENDER) dao.addTrusted(TrustedContactEntity(s, System.currentTimeMillis()))
     }
 
-    override fun removeTrustedContact(sender: String) {
-        _trusted.update { it - sender }
+    override suspend fun removeTrustedContact(sender: String) = dao.removeTrusted(sender)
+
+    override suspend fun trustedNow(): List<String> = dao.trustedList().map { it.sender }
+
+    companion object {
+        const val NO_SENDER = "—"   // manual checks have no sender
     }
+}
+
+// ---- mapping between the database row and the app's models
+
+private fun ScanResult.toEntity(source: MessageSource) = ScanEntity(
+    sender = sender ?: RoomScanRepository.NO_SENDER,
+    text = text,
+    source = source.name,
+    verdict = verdict.name,
+    score = score,
+    mlScore = mlScore,
+    urlScore = urlScore,
+    rulesScore = rulesScore,
+    flagsJson = JSONArray(flags.map { JSONObject().put("id", it.id).put("en", it.reasonEn).put("fil", it.reasonFil) }).toString(),
+    highlightsJson = JSONArray(highlights.map { JSONArray(listOf(it.first, it.last)) }).toString(),
+    timestamp = System.currentTimeMillis(),
+)
+
+private fun ScanEntity.toRecord(): ScanRecord {
+    val flags = JSONArray(flagsJson).let { a ->
+        (0 until a.length()).map { i -> a.getJSONObject(i).let { Flag(it.getString("id"), it.getString("en"), it.getString("fil")) } }
+    }
+    val highlights = JSONArray(highlightsJson).let { a ->
+        (0 until a.length()).map { i -> a.getJSONArray(i).let { it.getInt(0)..it.getInt(1) } }
+    }
+    val verdict = Verdict.valueOf(verdict)
+    val result = ScanResult(
+        text = text, sender = sender.takeIf { it != RoomScanRepository.NO_SENDER }, verdict = verdict, score = score,
+        mlScore = mlScore, urlScore = urlScore, rulesScore = rulesScore, flags = flags, highlights = highlights,
+    )
+    return ScanRecord(id, sender, text, MessageSource.valueOf(source), verdict, score, timestamp, result,
+        Feedback.valueOf(userFeedback))
 }

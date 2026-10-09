@@ -85,10 +85,14 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
         composable(Routes.RESULT) {
             val result by vm.lastResult.collectAsStateWithLifecycle()
             val explanation by vm.explanation.collectAsStateWithLifecycle()
+            val record by vm.currentRecord.collectAsStateWithLifecycle()
             result?.let {
                 ResultScreen(
                     result = it,
                     explanation = explanation,
+                    record = record,
+                    onMarkSafe = vm::markCurrentSafe,
+                    onReport = vm::reportCurrent,
                     onScanAnother = {
                         vm.draftText.value = ""
                         nav.popBackStack(Routes.CHECK, inclusive = false)
@@ -101,7 +105,7 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
             val history by vm.history.collectAsStateWithLifecycle()
             HistoryScreen(
                 history = history,
-                onOpen = { id -> if (vm.openScan(id)) nav.navigate(Routes.RESULT) },
+                onOpen = { id -> vm.openScan(id) { nav.navigate(Routes.RESULT) } },
                 onBack = { nav.popBackStack() },
             )
         }
@@ -120,6 +124,8 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
                 llmSizeMb = vm.llmSizeMb,
                 onSensitivityChange = vm::setSensitivity,
                 onAiExplanationsChange = vm::setAiExplanations,
+                onExport = vm::exportReports,
+                onClearHistory = vm::clearHistory,
                 onAddContact = vm::addTrustedContact,
                 onRemoveContact = vm::removeTrustedContact,
                 onBack = { nav.popBackStack() },
