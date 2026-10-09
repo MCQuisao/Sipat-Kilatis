@@ -93,9 +93,16 @@ SipatKilatis/
    - Sensitivity shifts the thresholds (SUSPICIOUS / SCAM): Low 0.5 / 0.8, Normal 0.4 / 0.7, High 0.3 / 0.6.
    - Verdict: `score < 0.4` → **SAFE**, `0.4 <= score < 0.7` → **SUSPICIOUS**, `score >= 0.7` → **SCAM**.
 4. **Explainer** (only for SUSPICIOUS or SCAM)
-   - Small local LLM (Gemma ~1B via **MediaPipe LLM Inference API**) writes a short explanation
-     in the user's language (Filipino / English / Taglish).
-   - Fallback: template explanation built from the triggered flags (rules hit, URL reasons, ML score).
+   - Small local LLM (Gemma 3 1B int4 `.task` via **MediaPipe LLM Inference API**, GPU first, CPU fallback)
+     writes a short explanation in the user's language. Model is NOT in the APK: pushed with adb to
+     `/sdcard/Android/data/com.example.sipatkilatis/files/llm/model.task`.
+   - Template explanation (`TemplateExplainer`, from the flags) is shown instantly and always works.
+   - LLM answer is shown only when COMPLETE (not streamed) and only if it passes `ExplanationSafety`
+     (rejects answers that tell the user to verify / click / send / ibigay ... without a negation; a 1B model
+     sometimes repeats the scammer's instruction). Time limit 20 s (measured ~11-13 s on a Snapdragon 732G GPU);
+     on timeout the model is reset. Filipino prompt is written in Tagalog (the model then answers in Tagalog).
+   - Measure on a phone with `LlmOnDeviceTest` via `adb shell am instrument` (NOT Gradle connected tests:
+     they uninstall the app, which deletes the pushed model file).
 5. **Storage**
    - **Room** database: scan history, user feedback (correct / wrong verdict), trusted contacts.
    - Optional sync when online for blocklist and model updates only. The app must **never depend** on it.

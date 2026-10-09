@@ -27,6 +27,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,6 +47,7 @@ import com.example.sipatkilatis.model.Sensitivity
 import com.example.sipatkilatis.ui.AppLanguage
 import com.example.sipatkilatis.ui.components.AppTopBar
 import com.example.sipatkilatis.ui.components.SectionCard
+import com.example.sipatkilatis.ui.theme.SafeGreen
 import kotlinx.coroutines.launch
 
 /** Language, sensitivity, trusted contacts, and the (placeholder) online update button. */
@@ -53,7 +55,11 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     sensitivity: Sensitivity,
     trustedContacts: List<String>,
+    aiExplanations: Boolean,
+    llmInstalled: Boolean,
+    llmSizeMb: Int,
     onSensitivityChange: (Sensitivity) -> Unit,
+    onAiExplanationsChange: (Boolean) -> Unit,
     onAddContact: (String) -> Unit,
     onRemoveContact: (String) -> Unit,
     onBack: () -> Unit,
@@ -101,6 +107,22 @@ fun SettingsScreen(
                         Sensitivity.HIGH -> R.string.sens_high_desc
                     }),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // Local LLM explanations (phase 6): on/off + whether the model file is on the phone
+            SectionCard(title = stringResource(R.string.settings_ai)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.settings_ai_desc), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    Spacer(Modifier.width(12.dp))
+                    Switch(checked = aiExplanations, onCheckedChange = onAiExplanationsChange, enabled = llmInstalled)
+                }
+                Text(
+                    if (llmInstalled) stringResource(R.string.settings_ai_installed, llmSizeMb)
+                    else stringResource(R.string.settings_ai_missing),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (llmInstalled) SafeGreen else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 

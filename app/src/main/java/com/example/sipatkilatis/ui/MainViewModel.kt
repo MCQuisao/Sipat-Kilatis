@@ -1,15 +1,21 @@
 package com.example.sipatkilatis.ui
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sipatkilatis.detection.ExplanationSafety
+import com.example.sipatkilatis.detection.LlmExplainer
 import com.example.sipatkilatis.graph
 import com.example.sipatkilatis.model.MessageSource
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Sensitivity
+import com.example.sipatkilatis.model.Verdict
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * State for the screens. The detector, history, and settings live in the app-wide [com.example.sipatkilatis.AppGraph]
@@ -43,6 +49,68 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _lastResult = MutableStateFlow<ScanResult?>(null)
     val lastResult = _lastResult.asStateFlow()
 
+    /** Explanation on the Result screen: template first, then (maybe) the local LLM's text, streamed. */
+    private val _explanation = MutableStateFlow(ExplanationUi(""))
+    val explanation = _explanation.asStateFlow()
+    private var explainJob: Job? = null
+
+    val aiExplanations = graph.aiExplanations
+    val llmInstalled get() = graph.llmExplainer.isInstalled
+    val llmSizeMb get() = (graph.llmExplainer.modelFile.length() / 1_000_000).toInt()
+
+    fun setAiExplanations(on: Boolean) {
+        prefs.aiExplanations = on
+        aiExplanations.value = on
+    }
+
+    /** Show a result and start its explanation. */
+    private fun showResult(result: ScanResult) {
+        _lastResult.value = result
+        explain(result)
+    }
+
+    /**
+     * 1. Template explanation immediately (always works).
+     * 2. For SUSPICIOUS / SCAM, if enabled and installed: load the LLM (once) and let it write an explanation.
+     *    Shown only when complete AND it passes [ExplanationSafety]; otherwise the template stays.
+     *    Hard time limit [LlmExplainer.TIMEOUT_MS]; a timeout also resets the model (it can stall on some phones).
+     */
+    private fun explain(result: ScanResult) {
+        explainJob?.cancel()
+        val filipino = AppLanguage.current() == AppLanguage.FILIPINO
+        val template = graph.templateExplainer.build(result, filipino)
+        _explanation.value = ExplanationUi(template)
+        val llm = graph.llmExplainer
+        if (result.verdict == Verdict.SAFE || !aiExplanations.value || !llm.isInstalled) return
+
+        explainJob = viewModelScope.launch {
+            _explanation.value = ExplanationUi(template, generating = true)
+            val loaded = withTimeoutOrNull(60_000) { llm.load() } ?: false
+            if (!loaded) {
+                _explanation.value = ExplanationUi(template)
+                return@launch
+            }
+            var text = ""
+            val finished = withTimeoutOrNull(LlmExplainer.TIMEOUT_MS) {
+                llm.stream(result, filipino).collect { text = it }   // collected, but not shown until done
+                true
+            }
+            _explanation.value = when {
+                finished != true -> {
+                    Log.d("SipatKilatis", "LLM explanation timed out after ${LlmExplainer.TIMEOUT_MS} ms; using template")
+                    launch { llm.reset() }
+                    ExplanationUi(template)
+                }
+                text.isBlank() -> ExplanationUi(template)
+                !ExplanationSafety.isSafe(text) -> {
+                    Log.d("SipatKilatis", "LLM explanation rejected by safety check; using template")
+                    ExplanationUi(template)
+                }
+                else -> ExplanationUi(text, fromAi = true)
+            }
+        }
+    }
+
     fun finishOnboarding() {
         prefs.onboardingDone = true
         onboardingDone.value = true
@@ -70,7 +138,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Show a saved scan (from an alert or the History list). Returns false if it is no longer in memory. */
     fun openScan(id: Long, fromAlert: Boolean = false): Boolean {
         val result = repo.find(id)?.result ?: return false
-        _lastResult.value = result
+        showResult(result)
         if (fromAlert) _pendingResult.value = true
         return true
     }
@@ -87,7 +155,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _scanning.value = true
             val result = graph.detector.detect(text)
             repo.addScan(result, MessageSource.MANUAL)
-            _lastResult.value = result
+            showResult(result)
             _scanning.value = false
             onDone()
         }
@@ -96,3 +164,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun addTrustedContact(sender: String) = repo.addTrustedContact(sender)
     fun removeTrustedContact(sender: String) = repo.removeTrustedContact(sender)
 }
+
+/** What the Result screen's explanation card shows. */
+data class ExplanationUi(val text: String, val fromAi: Boolean = false, val generating: Boolean = false)

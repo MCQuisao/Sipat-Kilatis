@@ -14,9 +14,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,6 +34,7 @@ import com.example.sipatkilatis.R
 import com.example.sipatkilatis.model.ScanResult
 import com.example.sipatkilatis.model.Verdict
 import com.example.sipatkilatis.ui.AppLanguage
+import com.example.sipatkilatis.ui.ExplanationUi
 import com.example.sipatkilatis.ui.components.AppTopBar
 import com.example.sipatkilatis.ui.components.BulletItem
 import com.example.sipatkilatis.ui.components.HighlightedText
@@ -46,7 +49,7 @@ private val OnTint = Color(0xFF15181E)   // dark text on the light verdict tints
 
 /** Verdict, risk bar, highlighted message, explanation, and what to do now. */
 @Composable
-fun ResultScreen(result: ScanResult, onScanAnother: () -> Unit, onBack: () -> Unit) {
+fun ResultScreen(result: ScanResult, explanation: ExplanationUi, onScanAnother: () -> Unit, onBack: () -> Unit) {
     val pct = { v: Float -> (v * 100).toInt() }
     Scaffold(topBar = { AppTopBar(stringResource(R.string.result_title), onBack) }) { padding ->
         Column(
@@ -97,13 +100,31 @@ fun ResultScreen(result: ScanResult, onScanAnother: () -> Unit, onBack: () -> Un
                 }
             }
 
-            // Explanation card. Phase 6 replaces this with the local LLM explanation (template stays as fallback).
+            // Explanation: template shown instantly; the local LLM's explanation replaces it when ready (streamed).
             SectionCard(title = stringResource(R.string.result_why)) {
-                if (result.flags.isEmpty()) {
-                    Text(stringResource(R.string.result_explanation_safe), style = MaterialTheme.typography.bodyLarge)
-                } else {
-                    val filipino = AppLanguage.current() == AppLanguage.FILIPINO
-                    Text(stringResource(R.string.result_explanation_intro), style = MaterialTheme.typography.bodyLarge)
+                Text(explanation.text, style = MaterialTheme.typography.bodyLarge)
+                if (explanation.generating) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.result_ai_generating), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else if (explanation.fromAi) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.result_ai_written), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            // The AI text replaces the template's list, so keep the detector's exact warning signs visible too
+            if (explanation.fromAi && result.flags.isNotEmpty()) {
+                val filipino = AppLanguage.current() == AppLanguage.FILIPINO
+                SectionCard(title = stringResource(R.string.result_signs)) {
                     result.flags.forEach { BulletItem(if (filipino) it.reasonFil else it.reasonEn) }
                 }
             }

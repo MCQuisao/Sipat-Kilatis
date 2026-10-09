@@ -7,7 +7,9 @@ import com.example.sipatkilatis.capture.ScamAlerts
 import com.example.sipatkilatis.data.AppPreferences
 import com.example.sipatkilatis.data.FakeScanRepository
 import com.example.sipatkilatis.data.ScanRepository
+import com.example.sipatkilatis.detection.LlmExplainer
 import com.example.sipatkilatis.detection.OnDeviceScamDetector
+import com.example.sipatkilatis.detection.TemplateExplainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,6 +32,11 @@ class AppGraph(context: Context) {
     val detector = OnDeviceScamDetector(context, { sensitivity.value }, { repo.trustedContacts.value })
     val alerts = ScamAlerts(context, prefs)
     val screener = MessageScreener(this)
+
+    // Explanations: instant template, optionally replaced by the local LLM (phase 6)
+    val templateExplainer = TemplateExplainer()
+    val llmExplainer = LlmExplainer(context)
+    val aiExplanations = MutableStateFlow(prefs.aiExplanations)
 }
 
 class SipatApp : Application() {

@@ -84,9 +84,11 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
         }
         composable(Routes.RESULT) {
             val result by vm.lastResult.collectAsStateWithLifecycle()
+            val explanation by vm.explanation.collectAsStateWithLifecycle()
             result?.let {
                 ResultScreen(
                     result = it,
+                    explanation = explanation,
                     onScanAnother = {
                         vm.draftText.value = ""
                         nav.popBackStack(Routes.CHECK, inclusive = false)
@@ -109,10 +111,15 @@ fun AppNavHost(vm: MainViewModel, nav: NavHostController = rememberNavController
         composable(Routes.SETTINGS) {
             val sensitivity by vm.sensitivity.collectAsStateWithLifecycle()
             val trusted by vm.trustedContacts.collectAsStateWithLifecycle()
+            val aiOn by vm.aiExplanations.collectAsStateWithLifecycle()
             SettingsScreen(
                 sensitivity = sensitivity,
                 trustedContacts = trusted,
+                aiExplanations = aiOn,
+                llmInstalled = vm.llmInstalled,
+                llmSizeMb = vm.llmSizeMb,
                 onSensitivityChange = vm::setSensitivity,
+                onAiExplanationsChange = vm::setAiExplanations,
                 onAddContact = vm::addTrustedContact,
                 onRemoveContact = vm::removeTrustedContact,
                 onBack = { nav.popBackStack() },

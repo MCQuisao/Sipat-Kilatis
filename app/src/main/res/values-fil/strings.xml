@@ -168,4 +168,13 @@
     <string name="perm_open_settings">Buksan ang settings</string>
     <string name="perm_xiaomi">Xiaomi, Redmi, o POCO na phone: sa App settings, i-on ang Autostart at gawing \"No restrictions\" ang Battery saver para tuloy-tuloy ang pagsusuri kahit nasa background.</string>
     <string name="perm_xiaomi_button">Buksan ang app settings</string>
+
+    <!-- AI explanations (local LLM, phase 6) -->
+    <string name="result_ai_generating">Gumagawa ng paliwanag sa phone mo…</string>
+    <string name="result_ai_written">Isinulat ng AI sa phone mo, kahit offline</string>
+    <string name="result_signs">Mga babalang nakita</string>
+    <string name="settings_ai">Paliwanag ng AI</string>
+    <string name="settings_ai_desc">Isang maliit na AI sa phone mo ang nagpapaliwanag ng kahina-hinala at scam na mensahe sa simpleng salita. Gumagana kahit offline.</string>
+    <string name="settings_ai_installed">Naka-install ang AI model (%1$d MB)</string>
+    <string name="settings_ai_missing">Hindi naka-install ang AI model. Simpleng paliwanag ang gagamitin.</string>
 </resources>
